@@ -37,4 +37,29 @@ ggplot(data = result_table, aes(x= one_minus_specificity, y= sensitivity)) +
                      title = "ROC Curve for the Test")
 
 ## c
+sens <- 3/4
+spec <- 17/23
+
+prevalance <- seq(0, 1, length.out = 101)
+ppv <- (sens*prevalance)/((sens*prevalance) + ((1-spec)*(1-prevalance)))
+npv <- (spec*(1-prevalance))/((spec*(1-prevalance)) + ((1-sens)*(prevalance)))
+
+ppv_prevalance <- data.frame(
+  prevalance = prevalance,
+  ppv = ppv)
+
+npv_prevalance <- data.frame(
+  prevalance = prevalance,
+  npv = npv)
+
+
+ggplot(data = ppv_prevalance, aes(x= prevalance, y= ppv)) +
+  geom_line() + labs(x = "Prevalence",
+                     y = "Positive Predictive Value",
+                     title = "PPV Against Prevalence")
+
+ggplot(data = npv_prevalance, aes(x= prevalance, y= npv)) +
+  geom_line() + labs(x = "Prevalence",
+                     y = "Negative Predictive Value",
+                     title = "NPV Against Prevalence")
 
