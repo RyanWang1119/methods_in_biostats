@@ -63,3 +63,55 @@ ggplot(data = npv_prevalance, aes(x= prevalance, y= npv)) +
                      y = "Negative Predictive Value",
                      title = "NPV Against Prevalence")
 
+## c
+# the number of trials without replacement
+without_replacement <- function(n, num_simulations = 10000) {
+  results <- numeric(num_simulations)
+    for (i in 1:num_simulations) {
+    key <- 1:n
+    correct_key <- sample(key, 1)  # assign the correct key
+    num_trials <- 0
+
+    repeat {
+      num_trials <- num_trials + 1
+      chosen_key <- sample(key, 1)
+      if (chosen_key == correct_key) {
+        break
+      }
+      key <- key[key != chosen_key]  # remove the incorrect key
+
+    }
+
+    results[i] <- num_trials
+  }
+
+  mean(results)
+}
+
+without_replacement(8)
+without_replacement(12)
+
+with_replacement <- function(n, num_simulations = 10000) {
+  results <- numeric(num_simulations)
+
+  for (i in 1:num_simulations) {
+    correct_key <- sample(1:n, 1)
+    num_trials <- 0
+
+    repeat {
+      num_trials <- num_trials + 1
+      chosen_key <- sample(1:n, 1)
+      if (chosen_key == correct_key) {
+        break
+      }
+    }
+
+    results[i] <- num_trials
+  }
+
+  mean(results)
+}
+
+with_replacement(8)
+with_replacement(12)
+
