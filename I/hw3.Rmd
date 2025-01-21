@@ -1,0 +1,156 @@
+---
+title: "hw3"
+author: "Ryan Wang"
+date: "2024-09-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(graphics)
+```
+
+## Q1
+### a
+```{r}
+## b
+binom_likelihood <- function(k, n, p) {
+  dbinom(k, size = n, prob = p)
+}  # likelihood
+
+prob_H <- seq(0, 1, by = 0.01)
+binom_likelihood_value <- binom_likelihood(k=7, n=10, p=prob_H)
+
+max_binom_likelihood <- max(binom_likelihood_value)
+normalized_binom_likelihood <- binom_likelihood_value / max_binom_likelihood  # normalize the likelihood
+
+plot(prob_H, normalized_binom_likelihood, type = "l",
+     xlab = "Probability of Heads", ylab = "Normalized Likelihood",
+     main = "Likelihood of 7 Heads in 10 Flips")
+
+abline(h = max(normalized_binom_likelihood), col = "blue")
+abline(v = 0.5, col = "red")
+abline(v = 0.7, col = "green")
+points(0.7, 1, col = "darkgreen", pch = 19)
+```
+The likelihood does not suggest that the coin is fair.
+
+### f
+```{r}
+p_lt_10 <- sum(dnbinom(x=0:(9-3), size = 3, prob = 0.5))
+p_ge_10 <- 1- p_lt_10
+
+print(p_ge_10)
+```
+
+
+```{r}
+n_binom_likelihood <- function(k, n, p) {
+  dnbinom(k, size = n, prob = p)
+}
+
+prob_T <- seq(0.01, 1, by = 0.01)
+n_binom_likelihood_value <- n_binom_likelihood(k=3, n=10-3, p=prob_T)
+
+max_n_binom_likelihood <- max(n_binom_likelihood_value)
+normalized_n_binom_likelihood <- n_binom_likelihood_value / max_n_binom_likelihood  # normalize the likelihood
+
+plot(prob_T, normalized_n_binom_likelihood, type = "l",
+     xlab = "1- Probability of Tails", ylab = "Normalized Likelihood",
+     main = "Likelihood of 3 Tails (7 Heads) in 10 Flips")
+
+abline(h = max(normalized_n_binom_likelihood), col = "blue")
+abline(v = 0.5, col = "red")
+abline(v = 0.7, col = "green")
+points(0.7, 1, col = "darkgreen", pch = 19)
+```
+The likelihood does not suggest that the coin is fair.
+
+## Q3
+### a
+```{r}
+set.seed(929)
+a_sample <- rexp(n=1000, rate=1)
+a_mean <- mean(a_sample)
+a_variance <- var(a_sample)
+
+ifelse(a_variance-sum((a_sample-a_mean)^2)/(1000-1)<0.00001, yes = T, no = F)
+
+a <- c(a_mean, a_variance)
+names(a) <- c("sample mean", "sample mean")
+print(a)
+```
+The sample mean estimates the true mean and the sample variance estimates the true variance, because they are unbiased and consistent estimators.
+
+### b
+```{r}
+cumulative_mean <- cumsum(a_sample)/(1:1000)
+plot(1:1000, cumulative_mean, type="l", ylab = "Cumulative Mean")
+abline(h=1)
+```
+
+The law of large number states that the sample mean is consistent, indicating that the sample mean converges to the true mean=1 as n gets larger.
+
+### c
+```{r}
+hist(a_sample, main = "Histogram of samples from Exp(1)", freq = F)
+curve(dexp(x, rate = 1), add = T, col = "red", lwd=2)
+```
+
+It looks like a exponential distribution as the majority of the data is around 1 and is skewed to the right.
+
+### d
+```{r}
+set.seed(930)
+d_sample_mean <- numeric(1000)
+
+for (i in 1:1000){
+  d_sample <- rexp(n=100, rate=1)
+  d_sample_mean[i] <- mean(d_sample)
+}
+
+d_mean <- mean(d_sample_mean)  # mean of the sample mean
+d_variance <- var(d_sample_mean)  # variance of the sample mean
+ifelse(d_variance-sum((d_sample_mean-d_mean)^2)/(1000-1)<0.00001, yes = T, no = F)
+
+d <- c(d_mean, d_variance)
+names(d) <- c("Mean of the sample mean", "Variance of the sample mean")
+print(d)
+```
+
+These 1000 numbers should follow an approximate normal distribution with mean of 1 and variance of 0.01. By the central limit theorem, the distribution of the sample mean of a large number of identical independently distributed variables with mean = $\mu$ and variance = $\sigma^2$ can be approximated by the normal distribution with mean = $\mu$ and variance = $\frac{\sigma^2}{n}$, where here the sample size $n = 100$. 
+
+### e
+```{r}
+d_normalized <- (d_sample_mean - d_mean)/sqrt(d_variance)
+hist(d_normalized, main = "Sample Means from Exp(1) with n = 100", freq = F)
+curve(dnorm(x, mean = 0, sd=1), add = T, col = "red", lwd=2)
+```
+
+It looks like the standard normal (the red curve) because before the normalization, the sample means are approximately normal distributed. After normalizing them by subtracting the mean and divided by the variance, it should follow approximate standard normal. It is also stated by the CLT.
+
+### f
+```{r}
+set.seed(930)
+f_sample_variance <- numeric(1000)
+
+for (i in 1:1000){
+  f_sample <- rexp(n=100, rate=1)
+  f_sample_variance[i] <- var(f_sample)
+}
+
+f_mean <- mean(f_sample_variance)  # mean of the sample mean
+f_variance <- var(f_sample_variance)  # variance of the sample mean
+ifelse(f_variance-sum((f_sample_variance-f_mean)^2)/(1000-1)<0.00001, yes = T, no = F)
+
+
+names(f_mean) <- c("Mean of the sample variance")
+print(f_mean)
+
+hist(99*f_sample_variance, freq = F, ylim = c(0, 0.03), main = "Distribution of the sample variance")
+curve(dchisq(x, df=99), add = T, col = "red", lwd=2)
+```
+
+The average of the 1000 sample variances is approximately 1.007 which is close to the true mean 1. It means that the sample variances is an unbiased estimator of the population variance.
+
+The distribution of the sample variance does not look like a chi-squared distribution because the sample variances are derived from an exponential distribution, instead of normal distribution.
