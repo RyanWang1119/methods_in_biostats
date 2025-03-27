@@ -1,0 +1,24 @@
+---
+title: "hw5"
+author: "Ryan Wang"
+date: "2025-03-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(splines)
+library(marginaleffects)
+library(boot)
+library(olsrr)
+library(anthro) 
+library(mgcv)
+library(broom)
+library(car)
+library(patchwork)
+library(knitr)
+library(clubSandwich)
+```
+
+## Part I

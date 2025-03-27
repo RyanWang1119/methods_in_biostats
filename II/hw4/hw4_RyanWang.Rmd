@@ -1,0 +1,485 @@
+---
+title: "hw4"
+author: "Ryan Wang"
+date: "2025-03-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(splines)
+library(marginaleffects)
+library(boot)
+library(olsrr)
+library(anthro) 
+library(mgcv)
+library(broom)
+library(car)
+library(patchwork)
+library(knitr)
+library(clubSandwich)
+load("/Users/a26910/Documents/Git/jhu_biostat/methods_in_biostats/II/data/nepal.anthro.rdata") 
+```
+
+## Part I
+
+### 1
+```{r}
+d0 <- nepal.anthro[,c("id", "age", "wt","fuvisit","sex")] 
+d0$female <- factor(ifelse(d0$sex==2,1,0),levels=0:1,labels=c("Male","Female")) 
+zscores <- with(d0,anthro_zscores(sex = sex, age = age,weight = wt,is_age_in_month=TRUE))$zwei 
+d <- cbind(d0,zscores)[complete.cases(d0) & d0$age<60,] 
+d <- d %>% drop_na()
+```
+
+### 2
+```{r}
+ggplot(d, aes(x = age, y = zscores, color = female)) +
+  geom_line(aes(group = id), alpha = 0.3) +       
+  geom_point(alpha = 0.5, size = 0.8) +           
+  geom_smooth(                                     
+    method = "gam",
+    formula = y ~ s(x, bs = "ps"),
+    se = TRUE,
+    linewidth = 1.2
+  ) +
+  labs(
+    x = "Age (months)",
+    y = "Weight-for-age Z-score",
+    color = "Sex",
+    title = "Weight-for-age Z-scores by Sex"
+  ) +
+  scale_color_manual(values = c("Male" = "darkblue", "Female" = "orange")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+## Part II
+
+### 1
+```{r}
+d$sex <- as.factor(d$sex)
+d$fuvisit <- as.factor(d$fuvisit)
+model_2 <- lm(zscores ~ ns(age, df = 3)*female, data = d)
+```
+
+The spaghetti plot of the Z-score against age shows two knots for female and it is almost linear for male. So, the model I proposed is a natural splines model withe d.f. = 3 to account for the two knots for female with a interaction term between age and sex to account for the difference changing pattern between male and female.
+
+```{r}
+d$residuals <- residuals(model_2)
+
+residuals_df <- augment(model_2)
+ggplot(residuals_df, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") +
+  labs(title = "Residuals vs. Fitted Values",
+       subtitle = "Diagonstic plot 1",
+       x = "Fitted Values",
+       y = "Residuals") +
+  theme_minimal()
+
+ggplot(d, aes(sample = residuals)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "QQ Plot for Residuals",
+       subtitle = "Diagonstic plot 2",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal()
+
+res_data <- d %>%
+  group_by(age, sex) %>%
+  summarise(mean_resid = mean(residuals), .groups = "drop")
+
+ggplot(d, aes(x = age, y = residuals)) +
+  geom_point(alpha = 0.4) +
+  geom_hline(yintercept = 0, color = "blue", linewidth = 0.7, linetype = "dashed") +
+  geom_line(data = res_data, 
+            aes(y = mean_resid), 
+            color = "red", 
+            linewidth = 1) +
+  facet_wrap(~sex, 
+             labeller = labeller(sex = c("1" = "Male", "2" = "Female"))) +
+  labs(x = "Age", y = "Residual",
+       title =  "Residual vs. Age plots",
+       subtitle = "Diagonstic plot 3",) +
+  theme_minimal()
+```
+
+From the Residuals vs. Fitted Values plot, we see that the residuals are more spread out when the fitted values are less than -2.5 and are less spread out when the fitted values are greater than -1.5. This pattern indicates heteroscedasticity.
+
+From the QQ plot of the residuals, we see that some points deviate from their theoretical quantiles, meaning that the residuals are not normally distributed.
+
+From the Residual vs. Age plots, we see that for male and female, the residuals approximately have the mean of 0, but the variances of the means change with age, which also indicate heteroscedasticity. This can be addressed by using weighted least squares.
+
+### 2
+```{r}
+d$resid_sq <- d$residuals^2
+
+# age differences
+age_plot <- ggplot(d, aes(age, residuals^2)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "loess", color = "red") +
+  labs(x = "Age (months)", y = "Squared Residuals")
+
+# sex differences
+sex_plot <- ggplot(d, aes(x = factor(female), y = residuals^2)) + 
+  geom_boxplot() +
+  labs(x = "Sex", y = "Squared Residuals")
+
+combined_plot <- age_plot + sex_plot +
+plot_layout(ncol = 2, guides = "collect") &
+theme(legend.position = "bottom")
+
+combined_plot
+```
+
+From the figures of squared-residuals vs. age and sex, we see that the squared residuals change with age (larger when age is less than 20 or greater than 40), but do not show much difference between male and female. Thus, I will allow the variance of the reisuals to depend on age in model fitting.
+
+```{r}
+residuals_df_age <- data.frame(
+  id = d$id,
+  age = d$age,
+  residual = d$residuals
+)
+residuals_wide_age <- pivot_wider(
+  residuals_df_age,
+  names_from = age,
+  values_from = residual
+)
+
+nepal2_wide <- d %>% select(id, fuvisit, residuals) %>% spread(fuvisit,residuals) 
+pairs(nepal2_wide[,-1])
+cor(nepal2_wide[,-1], use = "pairwise.complete.obs")
+
+residual_matrix_age <- as.matrix(residuals_wide_age[, -1])
+cov_matrix_age <- cov(residual_matrix_age, use = "pairwise.complete.obs")
+cov_matrix_age[1:5,1:5]
+```
+From the residual's variance-covariance matrix of age, we see that the diagonal terms are not constant, which further means that the variance of residual changes with age.
+
+```{r}
+residuals_df_fuvisit <- data.frame(
+  id = d$id,
+  fuvisit = d$fuvisit,
+  residual = d$residuals
+)
+visit_cols <- paste("visit", sort(unique(d$fuvisit)))
+residuals_wide_fuvisit <- pivot_wider(
+  residuals_df_fuvisit,
+  names_from = fuvisit,
+  values_from = residual,
+  names_prefix = "visit "
+)
+
+cor_matrix_fuvisit <- cor(residuals_wide_fuvisit[, visit_cols], use = "pairwise.complete.obs")
+knitr::kable(cor_matrix_fuvisit, caption = "Empirical Correlation Matrix of Residuals Across Visits")
+
+pairs(residuals_wide_fuvisit[,-1],
+main = "Pairwise Scatterplot of Residuals Across Visits",
+pch = 20, col = rgb(0, 0, 1, alpha = 0.5))
+```
+
+From the residual's variance-covariance matrix of visits, we see that the correlations between visits decreases as the interval between visits increases. So, an AR(1) model might be suitable for modeling this decreasing correlation. I would also try the toeplitz model to account for the difference in rate of this decreasing correlation between visits.
+
+```{r}
+library(nlme)
+model_gls <- gls(
+  zscores ~ ns(age, df = 3)*female, 
+  data = d,
+  weights = varExp(form = ~ age),
+  correlation = corCAR1(form = ~ fuvisit | id),
+)
+
+residuals_df_fuvisit_gls <- data.frame(
+  id = d$id,
+  fuvisit = d$fuvisit,
+  residual = residuals(model_gls)
+)
+residuals_wide_fuvisit_gls <- pivot_wider(
+  residuals_df_fuvisit_gls,
+  names_from = fuvisit,
+  values_from = residual,
+  names_prefix = "visit "
+)
+
+cov_matrix_fuvisit_gls <- cor(residuals_wide_fuvisit_gls[, visit_cols], use = "pairwise.complete.obs")
+knitr::kable(cov_matrix_fuvisit_gls, caption = "Correlation Matrix of Residuals Across Visits (GLS with AR(1))")
+```
+
+```{r}
+model_gls_toep <- gls(
+  zscores ~ ns(age, df = 3)*female, 
+  data = d,
+  weights = varIdent(form = ~1 | age),
+                   correlation = corARMA(form = ~fuvisit|id, p = 4, q = 0))
+
+residuals_df_fuvisit_toep <- data.frame(
+  id = d$id,
+  fuvisit = d$fuvisit,
+  residual = residuals(model_gls_toep)
+)
+residuals_wide_fuvisit_toep <- pivot_wider(
+  residuals_df_fuvisit_toep,
+  names_from = fuvisit,
+  values_from = residual,
+  names_prefix = "visit "
+)
+
+cov_matrix_fuvisit_toep <- cor(residuals_wide_fuvisit_toep[, visit_cols], use = "pairwise.complete.obs")
+knitr::kable(cov_matrix_fuvisit_toep, caption = "Correlation Matrix of Residuals Across Visits (GLS with Toeplitz")
+```
+
+```{r}
+female_V <- getVarCov(model_gls, individual = 3)
+male_V <- getVarCov(model_gls, individual = 7)
+female_cor <- cov2cor(female_V)
+male_cor <- cov2cor(male_V)
+n_visits <- ncol(female_cor)
+visit_names <- paste("Visit", 0:(n_visits- 1))
+
+rownames(female_cor) <- colnames(female_cor) <- visit_names
+rownames(male_cor) <- colnames(male_cor) <- visit_names
+
+female_cor
+male_cor
+
+female_V_2 <- getVarCov(model_gls_toep, individual = 3)
+male_V_2 <- getVarCov(model_gls_toep, individual = 7)
+female_cor_2 <- cov2cor(female_V_2)
+male_cor_2 <- cov2cor(male_V_2)
+
+rownames(female_cor_2) <- colnames(female_cor) <- visit_names
+rownames(male_cor_2) <- colnames(male_cor) <- visit_names
+
+female_cor_2
+male_cor_2
+
+lag_vals <- 1:4
+empirical <- sapply(lag_vals, function(lag) {
+  mean(cor_matrix_fuvisit[row(cor_matrix_fuvisit)== col(cor_matrix_fuvisit)- lag], na.rm = TRUE)
+  })
+
+ar1 <- sapply(lag_vals, function(lag) {
+  mean(c(female_cor[row(female_cor)== col(female_cor)- lag],
+  male_cor[row(male_cor)== col(male_cor)- lag]), na.rm = TRUE)
+})
+
+toep <- sapply(lag_vals, function(lag) {
+  mean(c(female_cor_2[row(female_cor_2)== col(female_cor_2)- lag],
+  male_cor_2[row(male_cor_2)== col(male_cor_2)- lag]), na.rm = TRUE)
+})
+
+cor_comparison <- data.frame(
+  Lag = lag_vals,
+  Empirical = round(empirical, 3),
+  `AR (1)` = round(ar1, 3),
+  Toeplitz = round(toep, 3)
+)
+
+kable(cor_comparison, caption = "Comparison of Empirical, AR(1), and Toeplitz") 
+```
+
+
+```{r}
+model_2_coef <- data.frame(
+  Parameter = rownames(summary(model_2)$coef),
+  Estimate_m2 = summary(model_2)$coef[, 1],
+  SE_m2 = summary(model_2)$coef[, 2],
+  stringsAsFactors = FALSE
+)
+
+model_gls_coef <- data.frame(
+  Parameter = rownames(summary(model_gls)$tTable),
+  Estimate_gls = summary(model_gls)$tTable[, 1],
+  SE_gls = summary(model_gls)$tTable[, 2],
+  stringsAsFactors = FALSE
+)
+
+model_gls_toep_coef <- data.frame(
+  Parameter = rownames(summary(model_gls_toep)$tTable),
+  Estimate_toep = summary(model_gls_toep)$tTable[, 1],
+  SE_toep = summary(model_gls_toep)$tTable[, 2],
+  stringsAsFactors = FALSE
+)
+
+comparison_df <- merge(model_2_coef, model_gls_toep_coef, by = "Parameter", all = TRUE)
+comparison_df <- merge(comparison_df, model_gls_coef, by = "Parameter", all = TRUE)
+
+all_params <- unique(comparison_df$Parameter)
+common_params <- all_params[!grepl("fuvisit", all_params)]
+fuvisit_params <- all_params[grepl("fuvisit", all_params)]
+ordered_params <- c(common_params, fuvisit_params)
+comparison_df$Parameter <- factor(comparison_df$Parameter, levels = ordered_params)
+comparison_df <- comparison_df[order(comparison_df$Parameter),]
+
+numeric_cols <- sapply(comparison_df, is.numeric)
+comparison_df[numeric_cols] <- round(comparison_df[numeric_cols], 4)
+
+comparison_df <- comparison_df[, c("Parameter", 
+                                "Estimate_m2", "SE_m2", 
+                                "Estimate_gls", "SE_gls",
+                                "Estimate_toep", "SE_toep")] %>%
+  rownames_to_column("row_id") %>% select(-row_id)                   
+
+kable(comparison_df)
+
+aic_comparison_df <- tibble(
+  OLS = AIC(model_2),
+  `GLS, AR(1)` = AIC(model_gls),
+  `GLS, Toeplitz` = AIC(model_gls_toep)
+) %>%
+  mutate(across(everything(), ~round(., 1)))  
+
+aic_comparison_df
+kable(aic_comparison_df)
+```
+
+The AR(1) model has the least AIC value. It is used in the following analysis.
+
+```{r}
+beta_hat <- coef(model_gls)
+var_beta_hat <- model_gls$varBeta
+C <- matrix(0, nrow = 3, ncol = length(beta_hat))
+C[1, 6] <- 1   
+C[2, 7] <- 1  
+C[3, 8] <- 1  
+df <- nrow(C)
+
+C_var_beta_hat_C_inv <- solve(C %*% var_beta_hat %*% t(C))
+Q <- as.numeric(t(C %*% beta_hat) %*% C_var_beta_hat_C_inv %*% (C %*% beta_hat))
+p_value <- pchisq(Q, df, lower.tail = FALSE)
+
+wald_result <- data.frame(
+  Wald_Statistic = Q,
+  Degrees_of_Freedom = df,
+  P_Value = p_value
+)
+
+knitr::kable(wald_result,
+caption = "Wald Test for Growth Rates Differ by Sex",
+col.names = c("Wald Statistic", "Degrees of Freedom", "P-value"),
+digits = c(3, 0, 4))
+```
+
+The p-value is 0.257. I fail to reject the null under the significance level of 0.05 and conclude that the average growth rates are the same by sex.
+
+## IV
+### 1
+```{r}
+vcov.rob <- vcovCR(model_gls, cluster = d$id, type = "CR0")
+clubsand <- coef_test(model_gls, vcov = vcov.rob)
+clubsand
+```
+
+```{r}
+clubsand_comparison <- data.frame(
+  Coefficients = rownames(summary(model_gls)$tTable),
+  Model_SE = summary(model_gls)$tTable[, "Std.Error"],
+  Robust_SE = clubsand$SE,
+  Model_p_value = summary(model_gls)$tTable[, "p-value"],
+  Robust_p_value = clubsand$p_Satt
+)
+knitr::kable(clubsand_comparison[,-1], caption = "Comparison of Model-Based and Robust Standard Errors")
+```
+
+Comparing the model-based and robust standard errors, for most coefficients, the robust standard errors are similar to the model-based standard errors, indicating that the model assumptions are generally well-met.
+
+We see that the interaction terms: ns(age, df = 3)1:femaleFemale, ns(age, df = 3)2:femaleFemale, and ns(age, df = 3)3:femaleFemale, have smaller robust SEs than model-based ones. This suggests the variance structure proposed in the model reasonably captures the variability. 
+
+Specifically, for ns(age, df = 3)3:femaleFemale, the robust standard error is smaller, and the p-value of 0.055 indicates it is a significant term at significance level of 0.1. So,s the model-based standard error might be overestimating the variability for this term.
+
+### 2
+The data generally support the working model for the variance/covariance of the residuals, as the robust standard errors are similar to the model-based standard errors for most coefficients.
+However, the differences in robust standard errors for some coefficients (ns(age, df = 3)2 and ns(age, df = 3)3:femaleFemale) suggest that the model might be slightly misspecified or that there are some issues with the model assumptions, such as heteroskedasticity.
+
+### 3
+```{r}
+beta_hat <- clubsand$beta
+var_beta_hat_rob <- vcov.rob 
+
+Q_rob <- t(C %*% beta_hat) %*% solve(C %*% var_beta_hat_rob %*% t(C)) %*% (C %*% beta_hat)
+df_rob <- nrow(C)
+p_value_rob <- pchisq(Q_rob, df_rob, lower.tail = F)
+
+wald_result_rob <- data.frame(
+  Wald_Statistic = Q_rob,
+  Degrees_of_Freedom = df_rob,
+  P_Value = p_value_rob
+)
+knitr::kable(wald_result_rob,
+caption = "Wald Test for Growth Rates Differ by Sex with Robust Variance Estimates",
+col.names = c("Wald Statistic", "Degrees of Freedom", "P-value"),
+digits = c(3, 0, 4))
+```
+For robust estiamtes, we see a increase in the test-statistics (5.387) and a decrease in the p-value (0.1455) compared to the model-based estimates. But, under the significance level of 0.05, I still fail to reject the null and conclude that the average growth rates are the same by sex.
+
+### 4
+
+#### a
+```{r}
+my.boot <- function(data, id){
+  # Resample the children
+  dt <- data[id, ]
+  # Create a new id variable and drop the old id
+  dt$id = NULL
+  dt$id = seq(1,nrow(dt))
+  # Convert to the long format for model fitting
+  dlong0 = pivot_longer(dt,cols=!c(id,female),
+                    names_to=c("vars","fuvisit"),
+                    names_sep="_",values_to = "y")
+  dlong = pivot_wider(dlong0,names_from="vars",values_from="y")
+  # Fit the mean model
+  # I use the OLS with natural splines terms
+  fit = lm(zscores~ ns(age, df = 3) * female, dlong)
+  coefficients(fit)
+}
+
+set.seed(12)
+nepal.wide <- d[,c('id','age','zscores','female','fuvisit')] %>% pivot_wider(id_cols=c(id,female),values_from = c(age,zscores),names_from='fuvisit')
+result = boot(nepal.wide, my.boot, 1000)
+boot.V <- cov(result$t)
+boot.se <- sqrt(diag(boot.V))
+
+se_comparison <- data.frame(
+Model_SE = summary(model_gls)$tTable[, "Std.Error"],
+Robust_SE = clubsand$SE,
+Bootstrap_SE = boot.se
+)
+knitr::kable(se_comparison, caption = "Comparison of Standard Error")
+```
+
+The bootstrap standard errors are consistently higher than both the model-based and robust standard errors. This suggests that the estimates has more variability than initially estimated.
+
+#### b
+```{r}
+var_beta_hat_boot <- boot.V 
+boot_coef <- result$t0
+
+Q_boot <- t(C %*% boot_coef) %*% solve(C %*% var_beta_hat_boot %*% t(C)) %*% (C %*% boot_coef)
+df_boot <- nrow(C)
+p_value_boot <- pchisq(Q_boot, df_boot, lower.tail = F)
+
+wald_result_boot <- data.frame(
+  Wald_Statistic = Q_boot,
+  Degrees_of_Freedom = df_boot,
+  P_Value = p_value_boot
+)
+
+wald_result_combined <- data.frame(
+  Test = c("Model-Based", "Robust", "Bootstrap"),
+  Wald_Statistic = c(Q, Q_rob, Q_boot),
+  Degrees_of_Freedom = c(df, df_rob, df_boot),
+  P_Value = c(p_value, p_value_rob, p_value_boot))
+
+knitr::kable(wald_result_combined,
+  caption = "Comparison of Wald Tests: Model-Based, Robust, and Bootstrap Variance Estimates",
+  col.names = c("Test", "Wald Statistic", "Degrees of Freedom", "P-value"),
+  digits = c(0, 3, 0, 4))
+```
+
+Similarities: All tests share the same degrees of freedom and are used to test the same null hypothesis.
+
+Differences: The robust and bootstrap tests provide stronger evidence against the null hypothesis compared to the model-based test. I believe it is because the robust test and the bootstrap test are more effective in dealing with heteroskedasticity.
+

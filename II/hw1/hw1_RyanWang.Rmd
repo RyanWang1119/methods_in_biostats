@@ -1,0 +1,536 @@
+---
+title: "hw1 Ryan Wang"
+output:
+  html_document: default
+  pdf_document: default
+date: "2025-02-02"
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+data <- read.csv("data/nepal.anthro.csv")
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(splines)
+library(rgl)
+library(scatterplot3d)
+```
+
+# I
+
+### 1.
+
+```{r, warning=FALSE}
+# Extract first measurement per child
+first_measurements <- data %>%
+  group_by(id) %>%
+  arrange(num) %>%  # measurement time
+  slice(1) %>%
+  ungroup() %>%
+  mutate(
+    wt = as.numeric(wt),
+    ht = as.numeric(ht),
+    arm = as.numeric(arm)
+  ) %>%
+  mutate(
+    sex = factor(sex, 
+                 levels = c(1, 2), 
+                 labels = c("Male", "Female"))
+  ) %>%
+  filter(!is.na(wt))
+
+
+ggplot(first_measurements, aes(x = age, y = wt)) +
+  geom_point(
+    aes(color = factor(sex)),
+    position = position_jitter(width = 0.3, height = 0),
+    alpha = 0.6
+  ) +
+  geom_smooth(
+    method = "loess",
+    formula = y ~ x,
+    span = 0.5,
+    se = T,  
+    color = "black" 
+  ) +
+  # Customize colors and labels
+  scale_color_manual(
+    values = c("Female" = "purple", "Male" = "darkgreen"),  
+    name = "Sex"
+  ) +
+  labs(
+    x = "Age (months)",
+    y = "Weight (kg)",
+    color = "Sex",
+    title = "Weight vs. Age in Children (First Measurement)"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom")  
+```
+
+The weights of 185 children ranging from 1 to 60 months of age were plotted as a function of age.
+The average (SD) weight of 12 month olds is approximately 7 (0.5) kg, respectively.
+Average and SD of weight increases with age such that the average (SD) weight is approximately 12 (1) and 14 (1.5) for children aged 40 and 60 months, respectively.\
+\### 2.
+
+```{r, warning=FALSE}
+ggplot(first_measurements, aes(x = age, y = wt, color = sex)) +
+  geom_point(
+    position = position_jitter(width = 0.3, height = 0),
+    alpha = 0.6
+  ) +
+  # Separate LOESS curves for each sex
+  geom_smooth(
+    method = "loess",
+    formula = y ~ x,
+    span = 0.5,
+    se = T,  
+    linewidth = 1 
+  ) +
+  scale_color_manual(
+    values = c("Male" = "darkgreen", "Female" = "purple"), 
+    name = "Sex"
+  ) +
+  labs(
+    x = "Age (months)",
+    y = "Weight (kg)",
+    title = "Weight vs. Age with Sex-Specific LOESS Curves"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+Male weight increases steadily and linearly from 0 to 30 months, slows down from 30 to 40 months, accelerates from 40 to 50 months, and then shows no significant change from 50 to 60 months.
+Female weight also increases linearly but slows slightly from 10 to 30 months and accelerates from 30 to 40 months.
+Overall, there is no significant difference in the average weight between males and females over the 60-month period.
+
+### 3.
+
+```{r}
+model_slr <- lm(wt ~ age, data = first_measurements)
+summary(model_slr)
+```
+
+The model examines how a child's weight changes with age linearly.
+It suggests that at birth (age 0), the average weight of the children is approximately 5.44 kilograms with standard deviation of 0.204 (95% confidence interval: 5.1264 to 5.7536 kilograms).
+For every additional month of age, the average weight increases by about 0.16 kilograms with a standard deviation of 0.006 (95% confidence interval: 0.14824 to 0.17176 kilograms per month).
+The residual standard deviation of 1.40 kilograms indicates that, on average, individual children's weights deviate from the predicted weight by about 1.40 kilograms.
+
+### 4.
+
+```{r, warning=FALSE}
+ggplot(first_measurements, aes(x = age, y = wt)) +
+  geom_point(
+    aes(color = factor(sex)),
+    position = position_jitter(width = 0.3, height = 0),
+    alpha = 0.6
+  ) +
+  geom_smooth(
+    method = "loess",
+    formula = y ~ x,
+    span = 0.5,
+    color = "black",
+    se = FALSE,
+    linewidth = 1
+  ) +
+  geom_smooth(
+    method = "lm",
+    formula = y ~ x,
+    color = "darkblue",    
+    linetype = "dashed",
+    se = T,         
+    aes(group = 1)  
+  ) +
+  scale_color_manual(
+    values = c("Male" = "darkgreen", "Female" = "purple"),
+    name = "Sex"
+  ) +
+  labs(
+    x = "Age (months)",
+    y = "Weight (kg)",
+    title = "Weight vs. Age with Linear Regression Line"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+a.  The linearity assumption seems valid as we see that the regression line is close to the loess curve for the 0-60 months range.
+
+b.  The homoscedasticity does not hold as we see that the variance is smaller for the children under 30 months, but greater for children over 30 months.
+
+# II
+
+### 1.
+
+```{r}
+# a
+first_measurements <- first_measurements %>%
+  mutate(
+    age_c = age - 6,               
+    age_sp6 = ifelse(age - 6 > 0, age - 6, 0),    
+    age_sp12 = ifelse(age - 12 > 0, age - 12, 0)  
+  )
+
+# b
+model_spline <- lm(wt ~ age_c + age_sp6 + age_sp12, data = first_measurements)
+summary(model_spline)
+
+# c
+ggplot(first_measurements, aes(x = age, y = wt)) +
+  geom_point(
+    aes(color = factor(sex)),
+    position = position_jitter(width = 0.3, height = 0),
+    alpha = 0.6
+  ) +
+  geom_line(aes(y = fitted(model_spline)), color = "red", linewidth = 1) +  
+  scale_color_manual(
+    values = c("Male" = "darkgreen", "Female" = "purple"),
+    name = "Sex"
+  ) +
+  labs(
+    x = "Age (months)",
+    y = "Weight (kg)",
+    title = "Weight vs. Age with Linear Splines Line"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+d.  The model examines how a child's weight changes with age, considering both a linear relationship and additional effects at specific age points (6 months and 12 months).
+
+e.  Intercept (6.5171): At birth (age 0), the average weight of the children is approximately 6.52 kilograms with a standard deviation of 0.402 (95% confidence interval: 5.72 to 7.32 kilograms).
+
+age_c (0.5285): For every additional month of age, the average weight increases by about 0.53 kilograms with a standard deviation of 0.167, assuming no additional effects at 6 or 12 months (95% confidence interval: 0.20 to 0.86 kilograms per month).
+
+age_sp6 (-0.3423): Among children 6 to 12 months of age, the difference in average weight comparing children whose age differ by one month is 0.5285-0.3423 = 0.1862\
+age_sp6 is the difference between the average monthly change in weight comparing children 6 to 12 vs. under 6 months of age.
+(95% confidence interval: -0.79 to 0.11 kilograms).
+
+age_sp12 (-0.0394): Among children above 12 months of age, the difference in average weight comparing children whose age differ by one month is 0.5285-0.0394 = 0.4891\
+age_sp12 is the difference between the average monthly change in weight comparing children above 12 vs. under 6 months of age.
+(95% confidence interval: -0.19 to 0.11 kilograms).
+
+f.  The analysis suggests that while there is a strong linear relationship between age and weight as indicated by the significant coefficient for age_c (p-value \< 2e-16). The model intends to capture the potential deviations from this linear trend at 6 and 12 months. However, these deviations are not statistically significant as shown by the p-values for age_sp6 (0.13250) and age_sp12 (0.63025).
+
+So, the overall growth pattern is linear, with non-significant variations at these specific age points.
+
+### 2.
+
+```{r}
+# a
+first_measurements <- first_measurements %>%
+  mutate(
+    age_c = age - 6,                   
+    age2 = (age - 6)^2,                
+    age3 = (age - 6)^3,                
+    age_csp1 = pmax(age - 6, 0)^3)
+
+# b
+model_cubic <- lm(wt ~ age_c + age2 + age3 + age_csp1, data = first_measurements)
+summary(model_cubic)
+
+# c
+ggplot(first_measurements, aes(x = age, y = wt)) +
+  geom_point(
+    aes(color = sex),
+    position = position_jitter(width = 0.3),
+    alpha = 0.6
+  ) +
+  # Linear spline
+  geom_line(aes(y = fitted(model_spline)), color = "red", linetype = "dashed", linewidth = 1) +
+  # Cubic spline
+  geom_line(aes(y = fitted(model_cubic)), color = "blue", linewidth = 1) +
+  labs(
+    x = "Age (months)",
+    y = "Weight (kg)",
+    title = "Weight vs. Age: Linear vs. Cubic Spline"
+  ) +
+  scale_color_manual(values = c("Male" = "darkgreen", "Female" = "purple")) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+d.  Linear Spline shows piece-wise linear relation between weight and age with more abrupt slope changes at knots (age = 6, 12). Cubic Spline is a more smooth curve through the data, allowing gradual changes in slope at knots. The slope of the cubic spline gradually decreases to 0 at age approaches 60.
+
+### 3.
+
+```{r}
+# b
+model_ns <- lm(wt ~ ns(age, df = 3), data = first_measurements)
+summary(model_ns)
+
+# c
+ggplot(first_measurements, aes(x = age, y = wt)) +
+  geom_point(
+    aes(color = sex),
+    position = position_jitter(width = 0.3),
+    alpha = 0.6
+  ) +
+  # Linear spline 
+  geom_line(aes(y = fitted(model_spline)), color = "red", linetype = "dashed", linewidth = 1) +
+  # Cubic regression spline 
+  geom_line(aes(y = fitted(model_cubic)), color = "blue", linewidth = 1) +
+  # Natural cubic spline
+  geom_line(aes(y = fitted(model_ns)), color = "black", linetype = "dotted", linewidth = 1.5) +
+  labs(
+    x = "Age (months)",
+    y = "Weight (kg)",
+    title = "Weight vs. Age: Linear, Cubic, and Natural Spline"
+  ) +
+  scale_color_manual(values = c("Male" = "darkgreen", "Female" = "purple")) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(title = "Sex"))
+```
+
+d.  The natural spline is the most smooth curve among the three and shows no abrupt slope changes at knots.
+    In fact, the three curve do not differ by a lot except around the knot where age = 6.
+    The cubic regression spline seems to be the most consistent with the observed data as it has the highest $R^2$ value among the three (Multiple R-squared: 0.82).
+
+e.  
+
+```{r}
+X <- model.matrix(model_ns) 
+
+XtX_inv <- solve(t(X) %*% X)
+H <- X %*% XtX_inv %*% t(X)
+dim(H)
+
+# Find the indices of the children with ages 12, 24, and 48
+selected_indices <- sapply(c(12, 24, 48), function(a) which(first_measurements$age == a)[1]) 
+H_selected <- H[selected_indices, ]
+dim(H_selected)
+
+H_plot_data <- data.frame(
+age = rep(first_measurements$age, times = 3),
+child = rep(c("Child 1 (12 months)", "Child 2 (24 months)", "Child 3 (48 months)"), each = ncol(H_selected)),
+h_value = as.vector(t(H_selected))
+) %>% arrange(child, h_value)
+
+ggplot(H_plot_data, aes(x = age, y = h_value, color = child)) + geom_line(size = 1) +
+scale_x_continuous(
+breaks = seq(0, 60, by = 12))+
+labs(
+title = "Rows of Hat Matrix for Selected Children", x = "Age (months)",
+y = "Hat Matrix Values",
+color = "Child"
+) + 
+theme(legend.position = "bottom")
+```
+The plot shows that for the 12-months old child, the most informative values of Y is around 13 months.
+For the 24-months old child, the most informative values of Y is around 23 months.
+for the 48-months old child, the most informative values of Y is around 46 months.
+This is consistent with the mean model, for which the observations close to the predictor have stronger influence on the predicted values, and the distant observations affect the predicted value less.
+
+# III
+
+### 1.
+
+```{r}
+set.seed(23)  
+
+# Create 10-fold CV splits
+rows <- 1:nrow(first_measurements)
+shuffled_rows <- sample(rows, replace = F)
+#head(shuffled_rows)
+
+B <- 10
+folds <- cut(rows, breaks = B, labels = F)
+```
+
+### 2.
+
+```{r}
+# Initialize error storage
+cv_errors <- matrix(NA, nrow = 10, ncol = 8)  # 10 folds × 8 df values
+noncv_errors <- numeric(8)  
+
+for (df in 1:8) {
+  # Non-CV 
+  model_full <- lm(wt ~ ns(age, df = df), data = first_measurements)
+  noncv_errors[df] <- sum(resid(model_full)^2)  # Sum of squared residuals
+  
+  # 10-fold CV
+  for (fold in 1:10) {
+    # Split data
+    test_rows <- shuffled_rows[which(folds==fold)]
+    train_rows <- shuffled_rows[which(folds!=fold)]
+    
+    test_data <- first_measurements[test_rows, ]
+    train_data <- first_measurements[train_rows, ]
+    
+    # Fit model on training data
+    model_cv <- lm(wt ~ ns(age, df = df), data = train_data)
+    
+    # Predict on test data and compute error
+    predictions <- predict(model_cv, newdata = test_data)
+    cv_errors[fold, df] <- sum((test_data$wt - predictions)^2, na.rm = TRUE)
+  }
+  total_cv_error <- colSums(cv_errors)  # SSR for each df
+}
+
+# final error data
+error_df <- data.frame(
+  df = rep(1:8, 2),
+  type = rep(c("CV Error", "Training Error"), each = 8),
+  error = c(total_cv_error, noncv_errors)
+)
+```
+
+### 3.
+
+```{r}
+ggplot(error_df, aes(x = df, y = error, color = type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "Degrees of Freedom",
+    y = "Sum of Squared Errors",
+    title = "Natural Spline Model Selection",
+    subtitle = "Cross-Validated Error vs Training Error"
+  ) +
+  scale_x_continuous(breaks = 1:8) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+### 4.
+
+The non-CV prediction error decreases as the degrees of freedom increases from 1 to 8 and more parameters are included.
+
+The cross-validated prediction error reaches the lowest point (344.2) when df = 2, and increases as degrees of freedom increases from 2 to 8.
+It is because the model starts to overfit the data when df \> 2, leading to poorer generalization to new data.
+
+### 5.
+
+```{r}
+optimal_df <- which.min(total_cv_error) # 2
+model_optimal <- lm(wt ~ ns(age, df = optimal_df), data = first_measurements)
+
+# Add fitted values to data
+first_measurements$fitted_optimal <- fitted(model_optimal)
+
+ggplot(first_measurements, aes(x = age, y = wt)) +
+  geom_point(
+    aes(color = sex),
+    position = position_jitter(width = 0.3),
+    alpha = 0.6
+  ) +
+  geom_line(
+    aes(y = fitted_optimal),
+    linewidth = 1
+  ) +
+  labs(
+    x = "Age (months)",
+    y = "Weight (kg)",
+    title = "Optimal Natural Spline Fit (df = 2), with Raw Data"
+  ) +
+  scale_color_manual(values = c("Male" = "darkgreen", "Female" = "purple")) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+### 6.
+
+Methods To find the optimal model for predicting child weight based on age, we conducted a cross-validation analysis using natural cubic splines.
+We evaluated models with df values from 1 to 8 using 10-fold cross-validation.
+The data was randomly partitioned into 10 subsets; for each df, models were trained iteratively on 9 subsets and tested on the remaining subset.
+Prediction accuracy was evaluated by summing the squared differences between observed and predicted weights across all validation folds.
+For comparison, training errors (non-cross-validated) were computed using the full dataset.
+The cross-validation balances model flexibility and generalizability to avoid overfitting.
+
+Results The cross-validated prediction error was minimized at df = 2 (total error = 344.17), indicating that a natural cubic splines model with low complexity best generalizes to unseen data.
+While higher df values give lower training errors (training error at df = 8: 318.26), they show worse cross-validated performance (CV error at df = 8: 357.12), reflecting overfitting.
+The natural cubic splines model with df = 2 suggests a relatively gradual, near-linear relationship between age and weight.
+So, child weight gain in this data follows a steady trajectory over the observed age range.
+
+# IV
+
+### 1.
+
+```{r}
+plot3d(first_measurements$age,first_measurements$ht,first_measurements$wt)
+scatterplot3d(first_measurements$age,first_measurements$ht,first_measurements$wt,pch=16,type="h",highlight.3d=TRUE,xlab="age (months)",ylab="height (cm)",zlab="weight (grams)",main="Nepal Children's Study")
+pairs(first_measurements[, c("age", "ht", "wt")],
+main = "Pairwise Scatterplots: Age, Height, and Weight")
+```
+
+### 2.
+
+```{r}
+model_mlr <- lm(wt ~ age + ht, data = first_measurements)
+summary(model_mlr)
+```
+
+The model suggests that a person with an age of 0 years and a height of 0 cm would weigh about -8.297 kg, which is not practical in reality.
+
+For every additional year of age, the average weight of a child would increase by 0.0054 kg However, this relationship is not statistically significant, and the 95% confidence interval for this increase is from -0.0147 kg to 0.0255 kg.
+
+For every additional centimeter in height, the average weight of a child would increase by about 0.2281 kg.
+It is statistically significant, and the 95% confidence interval for this increase is from 0.200 kg to 0.256 kg.
+The residual standard error of 0.9035 mean that the average difference between the actual weights and the predicted weights is about 0.9035 kg.
+
+### 3.
+
+```{r}
+# Obtain residuals R(Y=wt|Z=ht) and R(X=age|Z=ht)
+first_measurements <- first_measurements %>%
+  mutate(resid.wt1 = lm(wt ~ ht, data = first_measurements)$residuals,
+         resid.age1 = lm(age ~ ht, data = first_measurements)$residuals)
+
+# Run the model of R(Y|Z) on R(X|Z)
+resid.model1 <- lm(resid.wt1 ~ resid.age1, data = first_measurements)
+summary(resid.model1)
+
+# Plot the estimates and we add a fitted line
+ggplot(data = first_measurements,
+                  aes(x = resid.age1, y = resid.wt1)) +
+  geom_jitter(alpha = 0.5) +
+  geom_smooth(aes(y = predict(resid.model1)), method = "lm", formula = y ~ x,
+              linewidth = 1, color = "#024873", se = FALSE) +
+  labs(x = "Residuals of age on height",
+       y = "Residuals of weight on height",
+       title = "Adjusted variable plot for weight circumference on age adjusting for height") 
+```
+
+### 4.
+
+```{r}
+# Slope for age from adjusted model
+adj_slope <- coef(resid.model1)["resid.age1"]
+# Slope for age from mlr
+mlr_slope <- coef(model_mlr)["age"]
+print(paste("Adjusted variable slope for age:", round(adj_slope, 5)))
+print(paste("Multiple linear regression slope for age:", round(mlr_slope, 5)))
+```
+
+Compare of SLR and MLR Coefficients
+
+SLR: $Weight = 5.445 +0.157×Age+\epsilon$
+
+For each additional month of age, the weight of a child is expected to increase by 0.157 kg (95% CI: 0.146 to 0.168 kg).
+This coefficient is highly significant (p \< 0.001).
+MLR:
+
+$Weight=−8.297+0.00537×Age+0.228×Height+\epsilon$
+
+For each additional month of age, the weight of a child is expected to increase by 0.005 kg (95% CI: -0.015 to 0.026 kg), assuming the child's height remains constant.
+This coefficient is not statistically significant (p = 0.598).
+
+The SLR coefficient for age (0.157 kg) is higher than the MLR coefficient (0.005 kg).
+This difference is because the SLR does not account for the influence of height, which is also related to weight.
+The MLR coefficient gives a more precise estimate of the effect of age on weight, controlling for the effect of height.
+
+### 5.
+
+To examine the relationship between weight, age, and height, I conducted regression analysis using data from the Nepal Children's Study.
+The dataset included 185 children with measurements of weight (in kilograms), age (in months), and height (in centimeters).
+I first visualized the data using a 3D scatter plot and a pairs plot to explore the relationships between the variables.
+I then fitted a single linear regression model with weight as the dependent variable and age the independent variable and a multiple linear regression model with weight as the dependent variable and age and height as independent variables.
+Lastly, I created an adjusted variable plot to explore the relationship between weight and age, adjusting for height.
+The coefficient values and their 95% confidence intervals were estimated to interpret the effects of age and height on weight.

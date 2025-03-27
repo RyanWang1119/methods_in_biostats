@@ -1,0 +1,973 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={hw1 Ryan Wang},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{hw1 Ryan Wang}
+\author{}
+\date{\vspace{-2.5em}2025-02-02}
+
+\begin{document}
+\maketitle
+
+\section{I}\label{i}
+
+\subsubsection{1.}\label{section}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Extract first measurement per child}
+\NormalTok{first\_measurements }\OtherTok{\textless{}{-}}\NormalTok{ data }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(id) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(num) }\SpecialCharTok{\%\textgreater{}\%}  \CommentTok{\# measurement time}
+  \FunctionTok{slice}\NormalTok{(}\DecValTok{1}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ungroup}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{wt =} \FunctionTok{as.numeric}\NormalTok{(wt),}
+    \AttributeTok{ht =} \FunctionTok{as.numeric}\NormalTok{(ht),}
+    \AttributeTok{arm =} \FunctionTok{as.numeric}\NormalTok{(arm)}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{sex =} \FunctionTok{factor}\NormalTok{(sex, }
+                 \AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{), }
+                 \AttributeTok{labels =} \FunctionTok{c}\NormalTok{(}\StringTok{"Male"}\NormalTok{, }\StringTok{"Female"}\NormalTok{))}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(wt))}
+
+
+\FunctionTok{ggplot}\NormalTok{(first\_measurements, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ age, }\AttributeTok{y =}\NormalTok{ wt)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}\AttributeTok{color =} \FunctionTok{factor}\NormalTok{(sex)),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =} \FloatTok{0.3}\NormalTok{, }\AttributeTok{height =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =} \FloatTok{0.6}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_smooth}\NormalTok{(}
+    \AttributeTok{method =} \StringTok{"loess"}\NormalTok{,}
+    \AttributeTok{formula =}\NormalTok{ y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ x,}
+    \AttributeTok{span =} \FloatTok{0.5}\NormalTok{,}
+    \AttributeTok{se =}\NormalTok{ T,  }
+    \AttributeTok{color =} \StringTok{"black"} 
+\NormalTok{  ) }\SpecialCharTok{+}
+  \CommentTok{\# Customize colors and labels}
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}
+    \AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Female"} \OtherTok{=} \StringTok{"purple"}\NormalTok{, }\StringTok{"Male"} \OtherTok{=} \StringTok{"darkgreen"}\NormalTok{),  }
+    \AttributeTok{name =} \StringTok{"Sex"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{x =} \StringTok{"Age (months)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Weight (kg)"}\NormalTok{,}
+    \AttributeTok{color =} \StringTok{"Sex"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Weight vs. Age in Children (First Measurement)"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)  }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-1-1.pdf}
+
+The weights of 185 children ranging from 1 to 60 months of age were
+plotted as a function of age. The average (SD) weight of 12 month olds
+is approximately 7 (0.5) kg, respectively. Average and SD of weight
+increases with age such that the average (SD) weight is approximately 12
+(1) and 14 (1.5) for children aged 40 and 60 months, respectively.\\
+\#\#\# 2.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{ggplot}\NormalTok{(first\_measurements, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ age, }\AttributeTok{y =}\NormalTok{ wt, }\AttributeTok{color =}\NormalTok{ sex)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =} \FloatTok{0.3}\NormalTok{, }\AttributeTok{height =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =} \FloatTok{0.6}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \CommentTok{\# Separate LOESS curves for each sex}
+  \FunctionTok{geom\_smooth}\NormalTok{(}
+    \AttributeTok{method =} \StringTok{"loess"}\NormalTok{,}
+    \AttributeTok{formula =}\NormalTok{ y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ x,}
+    \AttributeTok{span =} \FloatTok{0.5}\NormalTok{,}
+    \AttributeTok{se =}\NormalTok{ T,  }
+    \AttributeTok{linewidth =} \DecValTok{1} 
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}
+    \AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Male"} \OtherTok{=} \StringTok{"darkgreen"}\NormalTok{, }\StringTok{"Female"} \OtherTok{=} \StringTok{"purple"}\NormalTok{), }
+    \AttributeTok{name =} \StringTok{"Sex"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{x =} \StringTok{"Age (months)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Weight (kg)"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Weight vs. Age with Sex{-}Specific LOESS Curves"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+Male weight increases steadily and linearly from 0 to 30 months, slows
+down from 30 to 40 months, accelerates from 40 to 50 months, and then
+shows no significant change from 50 to 60 months. Female weight also
+increases linearly but slows slightly from 10 to 30 months and
+accelerates from 30 to 40 months. Overall, there is no significant
+difference in the average weight between males and females over the
+60-month period.
+
+\subsubsection{3.}\label{section-1}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{model\_slr }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}}\NormalTok{ age, }\AttributeTok{data =}\NormalTok{ first\_measurements)}
+\FunctionTok{summary}\NormalTok{(model\_slr)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = wt ~ age, data = first_measurements)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.7237 -0.8276  0.1854  0.9183  4.5043 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 5.444528   0.204316   26.65   <2e-16 ***
+## age         0.157003   0.005845   26.86   <2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.401 on 183 degrees of freedom
+## Multiple R-squared:  0.7977, Adjusted R-squared:  0.7966 
+## F-statistic: 721.4 on 1 and 183 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+The model examines how a child's weight changes with age linearly. It
+suggests that at birth (age 0), the average weight of the children is
+approximately 5.44 kilograms with standard deviation of 0.204 (95\%
+confidence interval: 5.1264 to 5.7536 kilograms). For every additional
+month of age, the average weight increases by about 0.16 kilograms with
+a standard deviation of 0.006 (95\% confidence interval: 0.14824 to
+0.17176 kilograms per month). The residual standard deviation of 1.40
+kilograms indicates that, on average, individual children's weights
+deviate from the predicted weight by about 1.40 kilograms.
+
+\subsubsection{4.}\label{section-2}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{ggplot}\NormalTok{(first\_measurements, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ age, }\AttributeTok{y =}\NormalTok{ wt)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}\AttributeTok{color =} \FunctionTok{factor}\NormalTok{(sex)),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =} \FloatTok{0.3}\NormalTok{, }\AttributeTok{height =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =} \FloatTok{0.6}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_smooth}\NormalTok{(}
+    \AttributeTok{method =} \StringTok{"loess"}\NormalTok{,}
+    \AttributeTok{formula =}\NormalTok{ y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ x,}
+    \AttributeTok{span =} \FloatTok{0.5}\NormalTok{,}
+    \AttributeTok{color =} \StringTok{"black"}\NormalTok{,}
+    \AttributeTok{se =} \ConstantTok{FALSE}\NormalTok{,}
+    \AttributeTok{linewidth =} \DecValTok{1}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_smooth}\NormalTok{(}
+    \AttributeTok{method =} \StringTok{"lm"}\NormalTok{,}
+    \AttributeTok{formula =}\NormalTok{ y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ x,}
+    \AttributeTok{color =} \StringTok{"darkblue"}\NormalTok{,    }
+    \AttributeTok{linetype =} \StringTok{"dashed"}\NormalTok{,}
+    \AttributeTok{se =}\NormalTok{ T,         }
+    \FunctionTok{aes}\NormalTok{(}\AttributeTok{group =} \DecValTok{1}\NormalTok{)  }
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}
+    \AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Male"} \OtherTok{=} \StringTok{"darkgreen"}\NormalTok{, }\StringTok{"Female"} \OtherTok{=} \StringTok{"purple"}\NormalTok{),}
+    \AttributeTok{name =} \StringTok{"Sex"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{x =} \StringTok{"Age (months)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Weight (kg)"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Weight vs. Age with Linear Regression Line"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\item
+  The linearity assumption seems valid as we see that the regression
+  line is close to the loess curve for the 0-60 months range.
+\item
+  The homoscedasticity does not hold as we see that the variance is
+  smaller for the children under 30 months, but greater for children
+  over 30 months.
+\end{enumerate}
+
+\section{II}\label{ii}
+
+\subsubsection{1.}\label{section-3}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# a}
+\NormalTok{first\_measurements }\OtherTok{\textless{}{-}}\NormalTok{ first\_measurements }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{age\_c =}\NormalTok{ age }\SpecialCharTok{{-}} \DecValTok{6}\NormalTok{,               }
+    \AttributeTok{age\_sp6 =} \FunctionTok{ifelse}\NormalTok{(age }\SpecialCharTok{{-}} \DecValTok{6} \SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{, age }\SpecialCharTok{{-}} \DecValTok{6}\NormalTok{, }\DecValTok{0}\NormalTok{),    }
+    \AttributeTok{age\_sp12 =} \FunctionTok{ifelse}\NormalTok{(age }\SpecialCharTok{{-}} \DecValTok{12} \SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{, age }\SpecialCharTok{{-}} \DecValTok{12}\NormalTok{, }\DecValTok{0}\NormalTok{)  }
+\NormalTok{  )}
+
+\CommentTok{\# b}
+\NormalTok{model\_spline }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}}\NormalTok{ age\_c }\SpecialCharTok{+}\NormalTok{ age\_sp6 }\SpecialCharTok{+}\NormalTok{ age\_sp12, }\AttributeTok{data =}\NormalTok{ first\_measurements)}
+\FunctionTok{summary}\NormalTok{(model\_spline)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = wt ~ age_c + age_sp6 + age_sp12, data = first_measurements)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.6698 -0.7883  0.0106  0.8976  4.5171 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   6.5171     0.4022  16.205  < 2e-16 ***
+## age_c         0.5285     0.1678   3.150  0.00191 ** 
+## age_sp6      -0.3423     0.2265  -1.511  0.13250    
+## age_sp12     -0.0394     0.0817  -0.482  0.63025    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.368 on 181 degrees of freedom
+## Multiple R-squared:  0.809,  Adjusted R-squared:  0.8058 
+## F-statistic: 255.5 on 3 and 181 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# c}
+\FunctionTok{ggplot}\NormalTok{(first\_measurements, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ age, }\AttributeTok{y =}\NormalTok{ wt)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}\AttributeTok{color =} \FunctionTok{factor}\NormalTok{(sex)),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =} \FloatTok{0.3}\NormalTok{, }\AttributeTok{height =} \DecValTok{0}\NormalTok{),}
+    \AttributeTok{alpha =} \FloatTok{0.6}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{fitted}\NormalTok{(model\_spline)), }\AttributeTok{color =} \StringTok{"red"}\NormalTok{, }\AttributeTok{linewidth =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}  
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}
+    \AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Male"} \OtherTok{=} \StringTok{"darkgreen"}\NormalTok{, }\StringTok{"Female"} \OtherTok{=} \StringTok{"purple"}\NormalTok{),}
+    \AttributeTok{name =} \StringTok{"Sex"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{x =} \StringTok{"Age (months)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Weight (kg)"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Weight vs. Age with Linear Splines Line"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{3}
+\item
+  The model examines how a child's weight changes with age, considering
+  both a linear relationship and additional effects at specific age
+  points (6 months and 12 months).
+\item
+  Intercept (6.5171): At birth (age 0), the average weight of the
+  children is approximately 6.52 kilograms with a standard deviation of
+  0.402 (95\% confidence interval: 5.72 to 7.32 kilograms).
+\end{enumerate}
+
+age\_c (0.5285): For every additional month of age, the average weight
+increases by about 0.53 kilograms with a standard deviation of 0.167,
+assuming no additional effects at 6 or 12 months (95\% confidence
+interval: 0.20 to 0.86 kilograms per month).
+
+age\_sp6 (-0.3423): Among children 6 to 12 months of age, the difference
+in average weight comparing children whose age differ by one month is
+0.5285-0.3423 = 0.1862\\
+age\_sp6 is the difference between the average monthly change in weight
+comparing children 6 to 12 vs.~under 6 months of age. (95\% confidence
+interval: -0.79 to 0.11 kilograms).
+
+age\_sp12 (-0.0394): Among children above 12 months of age, the
+difference in average weight comparing children whose age differ by one
+month is 0.5285-0.0394 = 0.4891\\
+age\_sp12 is the difference between the average monthly change in weight
+comparing children above 12 vs.~under 6 months of age. (95\% confidence
+interval: -0.19 to 0.11 kilograms).
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  The analysis suggests that while there is a strong linear relationship
+  between age and weight as indicated by the significant coefficient for
+  age\_c (p-value \textless{} 2e-16). The model intends to capture the
+  potential deviations from this linear trend at 6 and 12 months.
+  However, these deviations are not statistically significant as shown
+  by the p-values for age\_sp6 (0.13250) and age\_sp12 (0.63025).
+\end{enumerate}
+
+So, the overall growth pattern is linear, with non-significant
+variations at these specific age points.
+
+\subsubsection{2.}\label{section-4}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# a}
+\NormalTok{first\_measurements }\OtherTok{\textless{}{-}}\NormalTok{ first\_measurements }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{age\_c =}\NormalTok{ age }\SpecialCharTok{{-}} \DecValTok{6}\NormalTok{,                   }
+    \AttributeTok{age2 =}\NormalTok{ (age }\SpecialCharTok{{-}} \DecValTok{6}\NormalTok{)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{,                }
+    \AttributeTok{age3 =}\NormalTok{ (age }\SpecialCharTok{{-}} \DecValTok{6}\NormalTok{)}\SpecialCharTok{\^{}}\DecValTok{3}\NormalTok{,                }
+    \AttributeTok{age\_csp1 =} \FunctionTok{pmax}\NormalTok{(age }\SpecialCharTok{{-}} \DecValTok{6}\NormalTok{, }\DecValTok{0}\NormalTok{)}\SpecialCharTok{\^{}}\DecValTok{3}\NormalTok{)}
+
+\CommentTok{\# b}
+\NormalTok{model\_cubic }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}}\NormalTok{ age\_c }\SpecialCharTok{+}\NormalTok{ age2 }\SpecialCharTok{+}\NormalTok{ age3 }\SpecialCharTok{+}\NormalTok{ age\_csp1, }\AttributeTok{data =}\NormalTok{ first\_measurements)}
+\FunctionTok{summary}\NormalTok{(model\_cubic)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = wt ~ age_c + age2 + age3 + age_csp1, data = first_measurements)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.9372 -0.8113  0.0994  0.7262  4.1256 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  6.233515   0.258945  24.073  < 2e-16 ***
+## age_c        0.165051   0.047202   3.497 0.000593 ***
+## age2         0.001623   0.002234   0.726 0.468502    
+## age3         0.015562   0.008252   1.886 0.060912 .  
+## age_csp1    -0.015601   0.008265  -1.888 0.060695 .  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.332 on 180 degrees of freedom
+## Multiple R-squared:   0.82,  Adjusted R-squared:  0.8159 
+## F-statistic: 204.9 on 4 and 180 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# c}
+\FunctionTok{ggplot}\NormalTok{(first\_measurements, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ age, }\AttributeTok{y =}\NormalTok{ wt)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ sex),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =} \FloatTok{0.3}\NormalTok{),}
+    \AttributeTok{alpha =} \FloatTok{0.6}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \CommentTok{\# Linear spline}
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{fitted}\NormalTok{(model\_spline)), }\AttributeTok{color =} \StringTok{"red"}\NormalTok{, }\AttributeTok{linetype =} \StringTok{"dashed"}\NormalTok{, }\AttributeTok{linewidth =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}
+  \CommentTok{\# Cubic spline}
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{fitted}\NormalTok{(model\_cubic)), }\AttributeTok{color =} \StringTok{"blue"}\NormalTok{, }\AttributeTok{linewidth =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{x =} \StringTok{"Age (months)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Weight (kg)"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Weight vs. Age: Linear vs. Cubic Spline"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Male"} \OtherTok{=} \StringTok{"darkgreen"}\NormalTok{, }\StringTok{"Female"} \OtherTok{=} \StringTok{"purple"}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Linear Spline shows piece-wise linear relation between weight and age
+  with more abrupt slope changes at knots (age = 6, 12). Cubic Spline is
+  a more smooth curve through the data, allowing gradual changes in
+  slope at knots. The slope of the cubic spline gradually decreases to 0
+  at age approaches 60.
+\end{enumerate}
+
+\subsubsection{3.}\label{section-5}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# b}
+\NormalTok{model\_ns }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}} \FunctionTok{ns}\NormalTok{(age, }\AttributeTok{df =} \DecValTok{3}\NormalTok{), }\AttributeTok{data =}\NormalTok{ first\_measurements)}
+\FunctionTok{summary}\NormalTok{(model\_ns)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = wt ~ ns(age, df = 3), data = first_measurements)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.9308 -0.8202  0.1021  0.7982  4.1894 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)        4.8919     0.3471   14.09   <2e-16 ***
+## ns(age, df = 3)1   6.4816     0.4253   15.24   <2e-16 ***
+## ns(age, df = 3)2  11.8892     0.8737   13.61   <2e-16 ***
+## ns(age, df = 3)3   6.8342     0.3321   20.58   <2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.344 on 181 degrees of freedom
+## Multiple R-squared:  0.8158, Adjusted R-squared:  0.8128 
+## F-statistic: 267.3 on 3 and 181 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# c}
+\FunctionTok{ggplot}\NormalTok{(first\_measurements, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ age, }\AttributeTok{y =}\NormalTok{ wt)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ sex),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =} \FloatTok{0.3}\NormalTok{),}
+    \AttributeTok{alpha =} \FloatTok{0.6}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \CommentTok{\# Linear spline }
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{fitted}\NormalTok{(model\_spline)), }\AttributeTok{color =} \StringTok{"red"}\NormalTok{, }\AttributeTok{linetype =} \StringTok{"dashed"}\NormalTok{, }\AttributeTok{linewidth =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}
+  \CommentTok{\# Cubic regression spline }
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{fitted}\NormalTok{(model\_cubic)), }\AttributeTok{color =} \StringTok{"blue"}\NormalTok{, }\AttributeTok{linewidth =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}
+  \CommentTok{\# Natural cubic spline}
+  \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{fitted}\NormalTok{(model\_ns)), }\AttributeTok{color =} \StringTok{"black"}\NormalTok{, }\AttributeTok{linetype =} \StringTok{"dotted"}\NormalTok{, }\AttributeTok{linewidth =} \FloatTok{1.5}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{x =} \StringTok{"Age (months)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Weight (kg)"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Weight vs. Age: Linear, Cubic, and Natural Spline"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Male"} \OtherTok{=} \StringTok{"darkgreen"}\NormalTok{, }\StringTok{"Female"} \OtherTok{=} \StringTok{"purple"}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{guides}\NormalTok{(}\AttributeTok{color =} \FunctionTok{guide\_legend}\NormalTok{(}\AttributeTok{title =} \StringTok{"Sex"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{3}
+\item
+  The natural spline is the most smooth curve among the three and shows
+  no abrupt slope changes at knots. In fact, the three curve do not
+  differ by a lot except around the knot where age = 6. The cubic
+  regression spline seems to be the most consistent with the observed
+  data as it has the highest \(R^2\) value among the three (Multiple
+  R-squared: 0.82).
+\item
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{X }\OtherTok{\textless{}{-}} \FunctionTok{model.matrix}\NormalTok{(model\_ns) }
+
+\NormalTok{XtX\_inv }\OtherTok{\textless{}{-}} \FunctionTok{solve}\NormalTok{(}\FunctionTok{t}\NormalTok{(X) }\SpecialCharTok{\%*\%}\NormalTok{ X)}
+\NormalTok{H }\OtherTok{\textless{}{-}}\NormalTok{ X }\SpecialCharTok{\%*\%}\NormalTok{ XtX\_inv }\SpecialCharTok{\%*\%} \FunctionTok{t}\NormalTok{(X)}
+\FunctionTok{dim}\NormalTok{(H)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 185 185
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Find the indices of the children with ages 12, 24, and 48}
+\NormalTok{selected\_indices }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\DecValTok{12}\NormalTok{, }\DecValTok{24}\NormalTok{, }\DecValTok{48}\NormalTok{), }\ControlFlowTok{function}\NormalTok{(a) }\FunctionTok{which}\NormalTok{(first\_measurements}\SpecialCharTok{$}\NormalTok{age }\SpecialCharTok{==}\NormalTok{ a)[}\DecValTok{1}\NormalTok{]) }
+\NormalTok{H\_selected }\OtherTok{\textless{}{-}}\NormalTok{ H[selected\_indices, ]}
+\FunctionTok{dim}\NormalTok{(H\_selected)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]   3 185
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{H\_plot\_data }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+\AttributeTok{age =} \FunctionTok{rep}\NormalTok{(first\_measurements}\SpecialCharTok{$}\NormalTok{age, }\AttributeTok{times =} \DecValTok{3}\NormalTok{),}
+\AttributeTok{child =} \FunctionTok{rep}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"Child 1 (12 months)"}\NormalTok{, }\StringTok{"Child 2 (24 months)"}\NormalTok{, }\StringTok{"Child 3 (48 months)"}\NormalTok{), }\AttributeTok{each =} \FunctionTok{ncol}\NormalTok{(H\_selected)),}
+\AttributeTok{h\_value =} \FunctionTok{as.vector}\NormalTok{(}\FunctionTok{t}\NormalTok{(H\_selected))}
+\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{arrange}\NormalTok{(child, h\_value)}
+
+\FunctionTok{ggplot}\NormalTok{(H\_plot\_data, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ age, }\AttributeTok{y =}\NormalTok{ h\_value, }\AttributeTok{color =}\NormalTok{ child)) }\SpecialCharTok{+} \FunctionTok{geom\_line}\NormalTok{(}\AttributeTok{size =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}
+\FunctionTok{scale\_x\_continuous}\NormalTok{(}
+\AttributeTok{breaks =} \FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{60}\NormalTok{, }\AttributeTok{by =} \DecValTok{12}\NormalTok{))}\SpecialCharTok{+}
+\FunctionTok{labs}\NormalTok{(}
+\AttributeTok{title =} \StringTok{"Rows of Hat Matrix for Selected Children"}\NormalTok{, }\AttributeTok{x =} \StringTok{"Age (months)"}\NormalTok{,}
+\AttributeTok{y =} \StringTok{"Hat Matrix Values"}\NormalTok{,}
+\AttributeTok{color =} \StringTok{"Child"}
+\NormalTok{) }\SpecialCharTok{+} 
+\FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+## i Please use `linewidth` instead.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.
+\end{verbatim}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-8-1.pdf}
+The plot shows that for the 12-months old child, the most informative
+values of Y is around 13 months. For the 24-months old child, the most
+informative values of Y is around 23 months. for the 48-months old
+child, the most informative values of Y is around 46 months. This is
+consistent with the mean model, for which the observations close to the
+predictor have stronger influence on the predicted values, and the
+distant observations affect the predicted value less.
+
+\section{III}\label{iii}
+
+\subsubsection{1.}\label{section-6}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{23}\NormalTok{)  }
+
+\CommentTok{\# Create 10{-}fold CV splits}
+\NormalTok{rows }\OtherTok{\textless{}{-}} \DecValTok{1}\SpecialCharTok{:}\FunctionTok{nrow}\NormalTok{(first\_measurements)}
+\NormalTok{shuffled\_rows }\OtherTok{\textless{}{-}} \FunctionTok{sample}\NormalTok{(rows, }\AttributeTok{replace =}\NormalTok{ F)}
+\CommentTok{\#head(shuffled\_rows)}
+
+\NormalTok{B }\OtherTok{\textless{}{-}} \DecValTok{10}
+\NormalTok{folds }\OtherTok{\textless{}{-}} \FunctionTok{cut}\NormalTok{(rows, }\AttributeTok{breaks =}\NormalTok{ B, }\AttributeTok{labels =}\NormalTok{ F)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{2.}\label{section-7}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Initialize error storage}
+\NormalTok{cv\_errors }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\ConstantTok{NA}\NormalTok{, }\AttributeTok{nrow =} \DecValTok{10}\NormalTok{, }\AttributeTok{ncol =} \DecValTok{8}\NormalTok{)  }\CommentTok{\# 10 folds × 8 df values}
+\NormalTok{noncv\_errors }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(}\DecValTok{8}\NormalTok{)  }
+
+\ControlFlowTok{for}\NormalTok{ (df }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\DecValTok{8}\NormalTok{) \{}
+  \CommentTok{\# Non{-}CV }
+\NormalTok{  model\_full }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}} \FunctionTok{ns}\NormalTok{(age, }\AttributeTok{df =}\NormalTok{ df), }\AttributeTok{data =}\NormalTok{ first\_measurements)}
+\NormalTok{  noncv\_errors[df] }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(}\FunctionTok{resid}\NormalTok{(model\_full)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)  }\CommentTok{\# Sum of squared residuals}
+  
+  \CommentTok{\# 10{-}fold CV}
+  \ControlFlowTok{for}\NormalTok{ (fold }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\DecValTok{10}\NormalTok{) \{}
+    \CommentTok{\# Split data}
+\NormalTok{    test\_rows }\OtherTok{\textless{}{-}}\NormalTok{ shuffled\_rows[}\FunctionTok{which}\NormalTok{(folds}\SpecialCharTok{==}\NormalTok{fold)]}
+\NormalTok{    train\_rows }\OtherTok{\textless{}{-}}\NormalTok{ shuffled\_rows[}\FunctionTok{which}\NormalTok{(folds}\SpecialCharTok{!=}\NormalTok{fold)]}
+    
+\NormalTok{    test\_data }\OtherTok{\textless{}{-}}\NormalTok{ first\_measurements[test\_rows, ]}
+\NormalTok{    train\_data }\OtherTok{\textless{}{-}}\NormalTok{ first\_measurements[train\_rows, ]}
+    
+    \CommentTok{\# Fit model on training data}
+\NormalTok{    model\_cv }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}} \FunctionTok{ns}\NormalTok{(age, }\AttributeTok{df =}\NormalTok{ df), }\AttributeTok{data =}\NormalTok{ train\_data)}
+    
+    \CommentTok{\# Predict on test data and compute error}
+\NormalTok{    predictions }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(model\_cv, }\AttributeTok{newdata =}\NormalTok{ test\_data)}
+\NormalTok{    cv\_errors[fold, df] }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((test\_data}\SpecialCharTok{$}\NormalTok{wt }\SpecialCharTok{{-}}\NormalTok{ predictions)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{  \}}
+\NormalTok{  total\_cv\_error }\OtherTok{\textless{}{-}} \FunctionTok{colSums}\NormalTok{(cv\_errors)  }\CommentTok{\# SSR for each df}
+\NormalTok{\}}
+
+\CommentTok{\# final error data}
+\NormalTok{error\_df }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+  \AttributeTok{df =} \FunctionTok{rep}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\DecValTok{8}\NormalTok{, }\DecValTok{2}\NormalTok{),}
+  \AttributeTok{type =} \FunctionTok{rep}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"CV Error"}\NormalTok{, }\StringTok{"Training Error"}\NormalTok{), }\AttributeTok{each =} \DecValTok{8}\NormalTok{),}
+  \AttributeTok{error =} \FunctionTok{c}\NormalTok{(total\_cv\_error, noncv\_errors)}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsubsection{3.}\label{section-8}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{ggplot}\NormalTok{(error\_df, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ df, }\AttributeTok{y =}\NormalTok{ error, }\AttributeTok{color =}\NormalTok{ type)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}\AttributeTok{linewidth =} \DecValTok{1}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}\AttributeTok{size =} \DecValTok{2}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{x =} \StringTok{"Degrees of Freedom"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Sum of Squared Errors"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Natural Spline Model Selection"}\NormalTok{,}
+    \AttributeTok{subtitle =} \StringTok{"Cross{-}Validated Error vs Training Error"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{scale\_x\_continuous}\NormalTok{(}\AttributeTok{breaks =} \DecValTok{1}\SpecialCharTok{:}\DecValTok{8}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-11-1.pdf}
+
+\subsubsection{4.}\label{section-9}
+
+The non-CV prediction error decreases as the degrees of freedom
+increases from 1 to 8 and more parameters are included.
+
+The cross-validated prediction error reaches the lowest point (344.2)
+when df = 2, and increases as degrees of freedom increases from 2 to 8.
+It is because the model starts to overfit the data when df
+\textgreater{} 2, leading to poorer generalization to new data.
+
+\subsubsection{5.}\label{section-10}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{optimal\_df }\OtherTok{\textless{}{-}} \FunctionTok{which.min}\NormalTok{(total\_cv\_error) }\CommentTok{\# 2}
+\NormalTok{model\_optimal }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}} \FunctionTok{ns}\NormalTok{(age, }\AttributeTok{df =}\NormalTok{ optimal\_df), }\AttributeTok{data =}\NormalTok{ first\_measurements)}
+
+\CommentTok{\# Add fitted values to data}
+\NormalTok{first\_measurements}\SpecialCharTok{$}\NormalTok{fitted\_optimal }\OtherTok{\textless{}{-}} \FunctionTok{fitted}\NormalTok{(model\_optimal)}
+
+\FunctionTok{ggplot}\NormalTok{(first\_measurements, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ age, }\AttributeTok{y =}\NormalTok{ wt)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_point}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ sex),}
+    \AttributeTok{position =} \FunctionTok{position\_jitter}\NormalTok{(}\AttributeTok{width =} \FloatTok{0.3}\NormalTok{),}
+    \AttributeTok{alpha =} \FloatTok{0.6}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}
+    \FunctionTok{aes}\NormalTok{(}\AttributeTok{y =}\NormalTok{ fitted\_optimal),}
+    \AttributeTok{linewidth =} \DecValTok{1}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{x =} \StringTok{"Age (months)"}\NormalTok{,}
+    \AttributeTok{y =} \StringTok{"Weight (kg)"}\NormalTok{,}
+    \AttributeTok{title =} \StringTok{"Optimal Natural Spline Fit (df = 2), with Raw Data"}
+\NormalTok{  ) }\SpecialCharTok{+}
+  \FunctionTok{scale\_color\_manual}\NormalTok{(}\AttributeTok{values =} \FunctionTok{c}\NormalTok{(}\StringTok{"Male"} \OtherTok{=} \StringTok{"darkgreen"}\NormalTok{, }\StringTok{"Female"} \OtherTok{=} \StringTok{"purple"}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{theme\_bw}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"bottom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+\subsubsection{6.}\label{section-11}
+
+Methods To find the optimal model for predicting child weight based on
+age, we conducted a cross-validation analysis using natural cubic
+splines. We evaluated models with df values from 1 to 8 using 10-fold
+cross-validation. The data was randomly partitioned into 10 subsets; for
+each df, models were trained iteratively on 9 subsets and tested on the
+remaining subset. Prediction accuracy was evaluated by summing the
+squared differences between observed and predicted weights across all
+validation folds. For comparison, training errors (non-cross-validated)
+were computed using the full dataset. The cross-validation balances
+model flexibility and generalizability to avoid overfitting.
+
+Results The cross-validated prediction error was minimized at df = 2
+(total error = 344.17), indicating that a natural cubic splines model
+with low complexity best generalizes to unseen data. While higher df
+values give lower training errors (training error at df = 8: 318.26),
+they show worse cross-validated performance (CV error at df = 8:
+357.12), reflecting overfitting. The natural cubic splines model with df
+= 2 suggests a relatively gradual, near-linear relationship between age
+and weight. So, child weight gain in this data follows a steady
+trajectory over the observed age range.
+
+\section{IV}\label{iv}
+
+\subsubsection{1.}\label{section-12}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot3d}\NormalTok{(first\_measurements}\SpecialCharTok{$}\NormalTok{age,first\_measurements}\SpecialCharTok{$}\NormalTok{ht,first\_measurements}\SpecialCharTok{$}\NormalTok{wt)}
+\FunctionTok{scatterplot3d}\NormalTok{(first\_measurements}\SpecialCharTok{$}\NormalTok{age,first\_measurements}\SpecialCharTok{$}\NormalTok{ht,first\_measurements}\SpecialCharTok{$}\NormalTok{wt,}\AttributeTok{pch=}\DecValTok{16}\NormalTok{,}\AttributeTok{type=}\StringTok{"h"}\NormalTok{,}\AttributeTok{highlight.3d=}\ConstantTok{TRUE}\NormalTok{,}\AttributeTok{xlab=}\StringTok{"age (months)"}\NormalTok{,}\AttributeTok{ylab=}\StringTok{"height (cm)"}\NormalTok{,}\AttributeTok{zlab=}\StringTok{"weight (grams)"}\NormalTok{,}\AttributeTok{main=}\StringTok{"Nepal Children\textquotesingle{}s Study"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-13-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{pairs}\NormalTok{(first\_measurements[, }\FunctionTok{c}\NormalTok{(}\StringTok{"age"}\NormalTok{, }\StringTok{"ht"}\NormalTok{, }\StringTok{"wt"}\NormalTok{)],}
+\AttributeTok{main =} \StringTok{"Pairwise Scatterplots: Age, Height, and Weight"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-13-2.pdf}
+
+\subsubsection{2.}\label{section-13}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{model\_mlr }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}}\NormalTok{ age }\SpecialCharTok{+}\NormalTok{ ht, }\AttributeTok{data =}\NormalTok{ first\_measurements)}
+\FunctionTok{summary}\NormalTok{(model\_mlr)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = wt ~ age + ht, data = first_measurements)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -2.48498 -0.53548  0.01508  0.51986  2.77917 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -8.297442   0.865929  -9.582   <2e-16 ***
+## age          0.005368   0.010169   0.528    0.598    
+## ht           0.228086   0.014205  16.057   <2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.9035 on 182 degrees of freedom
+## Multiple R-squared:  0.9163, Adjusted R-squared:  0.9154 
+## F-statistic: 995.8 on 2 and 182 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+The model suggests that a person with an age of 0 years and a height of
+0 cm would weigh about -8.297 kg, which is not practical in reality.
+
+For every additional year of age, the average weight of a child would
+increase by 0.0054 kg However, this relationship is not statistically
+significant, and the 95\% confidence interval for this increase is from
+-0.0147 kg to 0.0255 kg.
+
+For every additional centimeter in height, the average weight of a child
+would increase by about 0.2281 kg. It is statistically significant, and
+the 95\% confidence interval for this increase is from 0.200 kg to 0.256
+kg. The residual standard error of 0.9035 mean that the average
+difference between the actual weights and the predicted weights is about
+0.9035 kg.
+
+\subsubsection{3.}\label{section-14}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Obtain residuals R(Y=wt|Z=ht) and R(X=age|Z=ht)}
+\NormalTok{first\_measurements }\OtherTok{\textless{}{-}}\NormalTok{ first\_measurements }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{resid.wt1 =} \FunctionTok{lm}\NormalTok{(wt }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ht, }\AttributeTok{data =}\NormalTok{ first\_measurements)}\SpecialCharTok{$}\NormalTok{residuals,}
+         \AttributeTok{resid.age1 =} \FunctionTok{lm}\NormalTok{(age }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ht, }\AttributeTok{data =}\NormalTok{ first\_measurements)}\SpecialCharTok{$}\NormalTok{residuals)}
+
+\CommentTok{\# Run the model of R(Y|Z) on R(X|Z)}
+\NormalTok{resid.model1 }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(resid.wt1 }\SpecialCharTok{\textasciitilde{}}\NormalTok{ resid.age1, }\AttributeTok{data =}\NormalTok{ first\_measurements)}
+\FunctionTok{summary}\NormalTok{(resid.model1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = resid.wt1 ~ resid.age1, data = first_measurements)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -2.48498 -0.53548  0.01508  0.51986  2.77917 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(>|t|)
+## (Intercept) -2.778e-17  6.624e-02   0.000    1.000
+## resid.age1   5.368e-03  1.014e-02   0.529    0.597
+## 
+## Residual standard error: 0.901 on 183 degrees of freedom
+## Multiple R-squared:  0.001529,   Adjusted R-squared:  -0.003927 
+## F-statistic: 0.2802 on 1 and 183 DF,  p-value: 0.5972
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Plot the estimates and we add a fitted line}
+\FunctionTok{ggplot}\NormalTok{(}\AttributeTok{data =}\NormalTok{ first\_measurements,}
+                  \FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ resid.age1, }\AttributeTok{y =}\NormalTok{ resid.wt1)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_jitter}\NormalTok{(}\AttributeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_smooth}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{y =} \FunctionTok{predict}\NormalTok{(resid.model1)), }\AttributeTok{method =} \StringTok{"lm"}\NormalTok{, }\AttributeTok{formula =}\NormalTok{ y }\SpecialCharTok{\textasciitilde{}}\NormalTok{ x,}
+              \AttributeTok{linewidth =} \DecValTok{1}\NormalTok{, }\AttributeTok{color =} \StringTok{"\#024873"}\NormalTok{, }\AttributeTok{se =} \ConstantTok{FALSE}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{x =} \StringTok{"Residuals of age on height"}\NormalTok{,}
+       \AttributeTok{y =} \StringTok{"Residuals of weight on height"}\NormalTok{,}
+       \AttributeTok{title =} \StringTok{"Adjusted variable plot for weight circumference on age adjusting for height"}\NormalTok{) }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{hw1_RyanWang_files/figure-latex/unnamed-chunk-15-1.pdf}
+
+\subsubsection{4.}\label{section-15}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Slope for age from adjusted model}
+\NormalTok{adj\_slope }\OtherTok{\textless{}{-}} \FunctionTok{coef}\NormalTok{(resid.model1)[}\StringTok{"resid.age1"}\NormalTok{]}
+\CommentTok{\# Slope for age from mlr}
+\NormalTok{mlr\_slope }\OtherTok{\textless{}{-}} \FunctionTok{coef}\NormalTok{(model\_mlr)[}\StringTok{"age"}\NormalTok{]}
+\FunctionTok{print}\NormalTok{(}\FunctionTok{paste}\NormalTok{(}\StringTok{"Adjusted variable slope for age:"}\NormalTok{, }\FunctionTok{round}\NormalTok{(adj\_slope, }\DecValTok{5}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "Adjusted variable slope for age: 0.00537"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{paste}\NormalTok{(}\StringTok{"Multiple linear regression slope for age:"}\NormalTok{, }\FunctionTok{round}\NormalTok{(mlr\_slope, }\DecValTok{5}\NormalTok{)))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "Multiple linear regression slope for age: 0.00537"
+\end{verbatim}
+
+Compare of SLR and MLR Coefficients
+
+SLR: \(Weight = 5.445 +0.157×Age+\epsilon\)
+
+For each additional month of age, the weight of a child is expected to
+increase by 0.157 kg (95\% CI: 0.146 to 0.168 kg). This coefficient is
+highly significant (p \textless{} 0.001). MLR:
+
+\(Weight=−8.297+0.00537×Age+0.228×Height+\epsilon\)
+
+For each additional month of age, the weight of a child is expected to
+increase by 0.005 kg (95\% CI: -0.015 to 0.026 kg), assuming the child's
+height remains constant. This coefficient is not statistically
+significant (p = 0.598).
+
+The SLR coefficient for age (0.157 kg) is higher than the MLR
+coefficient (0.005 kg). This difference is because the SLR does not
+account for the influence of height, which is also related to weight.
+The MLR coefficient gives a more precise estimate of the effect of age
+on weight, controlling for the effect of height.
+
+\subsubsection{5.}\label{section-16}
+
+To examine the relationship between weight, age, and height, I conducted
+regression analysis using data from the Nepal Children's Study. The
+dataset included 185 children with measurements of weight (in
+kilograms), age (in months), and height (in centimeters). I first
+visualized the data using a 3D scatter plot and a pairs plot to explore
+the relationships between the variables. I then fitted a single linear
+regression model with weight as the dependent variable and age the
+independent variable and a multiple linear regression model with weight
+as the dependent variable and age and height as independent variables.
+Lastly, I created an adjusted variable plot to explore the relationship
+between weight and age, adjusting for height. The coefficient values and
+their 95\% confidence intervals were estimated to interpret the effects
+of age and height on weight.
+
+\end{document}

@@ -1,0 +1,739 @@
+---
+title: "hw3"
+author: "Ryan Wang"
+date: "2025-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(splines)
+library(marginaleffects)
+library(boot)
+library(olsrr)
+```
+
+```{r}
+load("nmes.rdata")
+d3 <- nmes
+d <- subset(d3, lastage==65 & eversmk %in% c(0,1))
+d$ever <- as.numeric(d$eversmk)
+```
+
+# 1
+### a
+```{r}
+d <- subset(nmes, lastage >= 65 & eversmk %in% c(0, 1))
+d$agem65 <- d$lastage- 65
+d$age_sp1 <- pmax(0, d$lastage- 75) 
+d$age_sp2 <- pmax(0, d$lastage- 85)
+d$ever <- ifelse(d$eversmk== 1, 1, 0)
+model_1 <- lm(totalexp~ agem65 + age_sp1 + age_sp2 + ever +
+agem65:ever + age_sp1:ever + age_sp2:ever, data = d)
+summary(model_1)
+```
+
+```{r}
+d$residuals <- residuals(model_1)
+d$residuals_scaled <- d$residuals / 1000
+
+ggplot(d, aes(totalexp)) + 
+  geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Histogram of the Outcome Variable (totalexp)",
+       subtitle = "Medical expenditure is right-skewed")
+
+ggplot(d, aes(x = lastage, y = residuals_scaled, color = factor(ever))) +
+  geom_point(alpha = 0.6) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+  geom_hline(yintercept = min(d$residuals_scaled), color = "green")+
+  labs(x = "Age", y = "Scaled Residuals (per 1000 dollars)", color = "Ever Smoker") +
+  scale_color_manual(values = c("0" = "brown", "1" = "purple")) +
+  facet_wrap(~ factor(ever), ncol = 1) +
+  labs(title = "Residuals vs. Age for Ever and Never Smokers",
+       subtitle = "Residuals are not normally distribution") + 
+  theme_minimal() +
+  coord_cartesian(ylim = c(min(d$residuals_scaled) - 50, max(d$residuals_scaled)))
+```
+
+The minimum residual is -9.845, while the largest residual is > 100, and residuals are skewed to the negative.
+$residual=observed−predicted$
+The lower bound to the residuals at each year of age is due to the non-negativity of expenditures. If the model predicts a negative expenditure, the residual $residual=observed + |predicted|$. This may explain those very large residuals.
+If the model predicts a positive expenditure, the residual $residual=observed−predicted$ is bounded below by $−predicted$ and the minimum is achieved when $observed = 0$.
+
+### b
+```{r}
+res_data <- d %>%
+  group_by(lastage, ever) %>%
+  summarise(mean_resid = mean(residuals_scaled), .groups = "drop")
+
+ggplot(d, aes(x = lastage, y = residuals_scaled)) +
+  geom_point(alpha = 0.4) +
+  geom_hline(yintercept = 0, color = "blue", linewidth = 0.7, linetype = "dashed") +
+  geom_line(data = res_data, 
+            aes(y = mean_resid), 
+            color = "red", 
+            linewidth = 1) +
+  facet_wrap(~ever, 
+             labeller = labeller(ever = c("0" = "Never Smokers", "1" = "Ever Smokers"))) +
+  coord_cartesian(ylim = c(-10, 20)) +  
+  labs(x = "Age", y = "Residual (per $1000)",
+       title =  "Residual vs. age plots") +
+  theme_minimal()
+```
+### c
+The residuals roughly have mean 0 for age ranges from 65 to 85 (slightly off around age = 70) for both never and ever smokers.
+For never smokers, the residual mean rises to ~ 1 when age is around 88, drops to ~ 0 when age is around 90, and finally rises to ~ 2 when age is around 95.
+For ever smokers, the residual mean rises to ~ 1 when age is around 88, drops to ~ -1 when age is around 90, and finally rises to ~ 4 when age is around 95.
+
+To account for the slight curvature around age = 70, I add a bs(age_sp70, degree = 2) term. I also add bs(age_sp2, degree = 4) and bs(age_sp3, degree = 4) to account for the rise and fall in residuals when age is above 85.
+
+```{r}
+d$age_sp70 <- pmax(0, d$lastage - 70)
+d$age_sp3 <- pmax(0, d$lastage - 90)
+model_unadjusted <- lm(totalexp ~ agem65 + bs(age_sp70, degree = 2) + 
+                        bs(age_sp2, degree = 4) + 
+                        bs(age_sp3, degree = 4) + ever +
+                         ever*(agem65 + bs(age_sp70, degree = 2) + 
+                          bs(age_sp2, degree = 4) + bs(age_sp3, degree = 4)), 
+                       data = d)
+d$resid_unadj <- residuals(model_unadjusted) / 1000
+
+res_data_unadj <- d %>%
+  group_by(lastage, ever) %>%
+  summarise(mean_resid = mean(resid_unadj), .groups = "drop")
+
+ggplot(d, aes(x = lastage, y = resid_unadj)) +
+  geom_point(alpha = 0.4) +
+  geom_hline(yintercept = 0, color = "blue", linewidth = 0.7, linetype = "dashed") +
+  geom_line(data = res_data_unadj, 
+            aes(y = mean_resid), 
+            color = "red", 
+            linewidth = 1) +
+  facet_wrap(~ever, 
+             labeller = labeller(ever = c("0" = "Never Smokers", "1" = "Ever Smokers"))) +
+  coord_cartesian(ylim = c(-10, 20)) +  
+  labs(x = "Age", y = "Residual (per $1000)",
+       title =  "Residual vs. age plots")+
+  theme_minimal()
+```
+
+# 2
+### a
+```{r}
+pred_grid <- expand.grid(
+  lastage = 65:94,
+  ever = c(0, 1)
+)
+pred_grid$agem65 <- pred_grid$lastage - 65
+pred_grid$age_sp70 <- pmax(0, pred_grid$lastage - 70)
+pred_grid$age_sp2 <- pmax(0, pred_grid$lastage - 85)
+pred_grid$age_sp3 <- pmax(0, pred_grid$lastage - 90)
+
+preds <- predict(model_unadjusted, newdata = pred_grid)
+
+diff <- data.frame(
+  age = 65:94,
+  difference = preds[pred_grid$ever == 1] - preds[pred_grid$ever == 0],
+  difference_scaled = (preds[pred_grid$ever == 1] - preds[pred_grid$ever == 0])/1000
+)
+
+ggplot(diff, aes(x = age, y = difference_scaled)) +
+  geom_line(color = "darkblue", linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  labs(
+    x = "Age",
+    y = "Difference (per 1000 dollars)",
+    title = "Unadjusted Smoking Effect by Age",
+    subtitle = "Difference in Mean Expenditures (Ever - Never Smokers)",
+  ) +
+  theme_minimal()
+```
+### b
+```{r}
+d <- d %>%
+  mutate(
+    sex = as.factor(male),
+    race = as.factor(RACE3),
+    beltuse = as.factor(beltuse),
+    educate = as.factor(educate),
+    marital = as.factor(marital),
+    sregion = as.factor(sregion),
+    povstalb = as.factor(povstalb)
+  )
+
+model_adjusted <- lm(
+  totalexp ~ agem65 + bs(age_sp70, degree = 2) + 
+    bs(age_sp2, degree = 4) + bs(age_sp3, degree = 4) + ever +
+    ever*(agem65 + bs(age_sp70, degree = 2) + 
+            bs(age_sp2, degree = 4) + bs(age_sp3, degree = 4)) +
+    beltuse + educate + marital + povstalb,
+  data = d
+)
+
+adjusted_diff <- avg_comparisons(
+  model_adjusted,
+  variables = "ever",
+  by = "lastage",
+  newdata = subset(d, lastage %in% 65:94)  
+) %>%
+  as.data.frame() %>%
+  rename(age = lastage, adjusted = estimate) %>%
+  mutate(adjusted_difference_scaled = adjusted/1000)
+
+plot_data <- diff %>%
+  left_join(adjusted_diff %>% select(age, adjusted_difference_scaled), by = "age")
+
+ggplot(plot_data, aes(x = age)) +
+  geom_line(aes(y = difference_scaled, color = "Unadjusted"), linewidth = 1) +
+  geom_line(aes(y = adjusted_difference_scaled, color = "Adjusted"), linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  labs(
+    x = "Age",
+    y = "Difference (per 1000 dollars)",
+    title = "Unadjusted and Adjusted Smoking Effect by Age",
+    subtitle = "Difference in Mean Expenditures (Ever - Never Smokers)",
+  ) +
+  scale_color_manual(values = c("Unadjusted" = "darkblue", "Adjusted" = "red")) +
+  theme_bw()
+```
+
+### c
+The plot shows that the estimated differences of expenditures predicted by the adjusted and unadjusted model are changing with age.
+
+The adjusted estimates do not differ from the unadjusted estimates by much as the estimated difference in mean expenditure for ever and never smokers ages from 65 to 94 is almost the same. Only when age is around 87-92 the estimates show some differences. However, this might be caused by the residuals do not have mean of exactly 0 for this range of age, as we can see in the plot of 1c).
+
+So, these variables are either not strongly associated with both smoking status and mean expenditures in this population, or
+their effects on expenditures are balanced between smokers and non-smokers, and therefore, they are not helpful in predicting the mean expenditures.
+
+# 3
+### a
+```{r}
+d$squared_resid_unadj <- (residuals(model_unadjusted) / 1000)^2
+d$squared_resid_adj <- (residuals(model_adjusted) / 1000)^2
+
+plot_unadj <- ggplot(d, aes(x = lastage, y = squared_resid_unadj)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(
+    method = "loess",
+    color = "darkred",
+    linewidth = 1,
+    se = FALSE
+  ) +
+  facet_wrap(
+    ~ever,
+    labeller = labeller(ever = c("0" = "Never Smokers", "1" = "Ever Smokers"))
+  ) +
+  coord_cartesian(ylim = c(0, 1000)) +
+  labs(
+    x = "Age",
+    y = "Squared Residuals (per $1000²)",
+    title = "Unadjusted Model: Residual Variance by Age"
+  ) +
+  theme_minimal()
+
+plot_adj <- ggplot(d, aes(x = lastage, y = squared_resid_adj)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(
+    method = "loess",
+    color = "darkblue",
+    linewidth = 1,
+    se = FALSE
+  ) +
+  facet_wrap(
+    ~ever,
+    labeller = labeller(ever = c("0" = "Never Smokers", "1" = "Ever Smokers"))
+  ) +
+  coord_cartesian(ylim = c(0, 1000)) +
+  labs(
+    x = "Age",
+    y = "Squared Residuals (per $1000²)",
+    title = "Adjusted Model: Residual Variance by Age"
+  ) +
+  theme_minimal()
+
+print(plot_unadj)
+print(plot_adj)
+```
+
+For both unadjusted model and adjusted model, and for both ever smokers and never smokers, the residual variance is not constant with age. Also, it might not be reasonable to assume the residual variance as a function of age is same for ever and never smokers. It is because for never smokers, the residual variance is higher for age 70-75; for ever smokers, the residual variance is higher for age 65-70.
+
+# 4
+### a
+```{r}
+unadjusted_ci <- avg_comparisons(
+  model_unadjusted,
+  variables = "ever",
+  by = "lastage",
+  newdata = subset(d, lastage %in% 65:94)
+) %>%
+  as.data.frame() %>%
+  rename(age = lastage, difference = estimate) %>%
+  mutate(
+    ci_lower_unadj = difference - qnorm(0.975) * std.error,
+    ci_upper_unadj = difference + qnorm(0.975) * std.error
+  )
+
+adjusted_ci <- avg_comparisons(
+  model_adjusted,
+  variables = "ever",
+  by = "lastage",
+  newdata = subset(d, lastage %in% 65:94)
+) %>%
+  as.data.frame() %>%
+  rename(age = lastage, difference = estimate) %>%
+  mutate(
+    ci_lower_adj = difference - qnorm(0.975) * std.error,
+    ci_upper_adj = difference + qnorm(0.975) * std.error
+  )
+
+ci_data <- unadjusted_ci %>%
+  select(age, difference_unadj = difference, ci_lower_unadj, ci_upper_unadj) %>%
+  left_join(
+    adjusted_ci %>% select(age, difference_adj = difference, ci_lower_adj, ci_upper_adj),
+    by = "age"
+  )
+
+unadjusted_table <- ci_data[, c("age", "difference_unadj", "ci_lower_unadj", "ci_upper_unadj")]
+adjusted_table <- ci_data[, c("age", "difference_adj", "ci_lower_adj", "ci_upper_adj")]
+
+knitr::kable(head(unadjusted_table, 5),
+caption = "Adjusted Model Summary Table",
+col.names = c("Age", "Difference", "Lower CI", "Upper CI"))
+
+knitr::kable(head(adjusted_table, 5),
+caption = "Adjusted Model Summary Table",
+col.names = c("Age", "Difference", "Lower CI", "Upper CI"))
+```
+
+```{r}
+ggplot(ci_data, aes(x = age)) +
+  geom_ribbon(aes(ymin = ci_lower_unadj, ymax = ci_upper_unadj), 
+              fill = "blue", alpha = 0.2) +
+  geom_line(aes(y = difference_unadj, color = "Unadjusted"), linewidth = 1)  +
+  geom_ribbon(aes(ymin = ci_lower_adj, ymax = ci_upper_adj), 
+              fill = "red", alpha = 0.2) +
+  geom_line(aes(y = difference_adj, color = "Adjusted"), linewidth = 1) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray40") +
+  labs(
+    x = "Age",
+    y = "Difference in Mean Expenditures (Ever - Never Smokers)",
+    title = "Model-based 95% CIs for Difference",
+    color = "Model"
+  ) +
+  scale_color_manual(values = c("Unadjusted" = "darkblue", "Adjusted" = "red"))+
+  theme_minimal()
+```
+
+### b
+```{r}
+compute_difference <- function(data, indices) {
+  d_boot <- data[indices, ]
+    model_boot <- lm(
+    totalexp ~ agem65 + bs(age_sp70, degree = 2) + 
+      bs(age_sp2, degree = 4) + bs(age_sp3, degree = 4) + ever +
+      ever*(agem65 + bs(age_sp70, degree = 2) + 
+              bs(age_sp2, degree = 4) + bs(age_sp3, degree = 4)),
+    data = d_boot
+  )
+  pred_grid <- expand.grid(
+    lastage = 65:94,
+    ever = c(0, 1)
+  )
+  pred_grid$agem65 <- pred_grid$lastage - 65
+  pred_grid$age_sp70 <- pmax(0, pred_grid$lastage - 70)
+  pred_grid$age_sp2 <- pmax(0, pred_grid$lastage - 85)
+  pred_grid$age_sp3 <- pmax(0, pred_grid$lastage - 90)
+  preds <- predict(model_boot, newdata = pred_grid)
+  diff <- preds[pred_grid$ever == 1] - preds[pred_grid$ever == 0]
+  return(diff)
+}
+
+set.seed(35) 
+#boot_results <- boot(
+#  data = d, 
+#  statistic = compute_difference, 
+#  R = 1000)
+# saveRDS(boot_results, file = "boot_results.rds")
+
+boot_results <- readRDS(file = "boot_results.rds")
+
+n_ages <- length(65:94)
+boot_ci <- sapply(1:n_ages, function(x) boot.ci(boot_results, index = x, type = "perc")$percent[4:5])
+
+ci_bootstrap <- data.frame(
+  age = 65:94,
+  ci_lower = boot_ci[1, ],
+  ci_upper = boot_ci[2, ]
+)
+
+boot_data_unadjusted <- merge(diff, ci_bootstrap, by = "age")
+
+ggplot(boot_data_unadjusted, aes(x = age, y = difference)) +
+  geom_line(color = "darkblue", linewidth = 1) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper), 
+              fill = "blue", alpha = 0.3) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(
+    x = "Age",
+    y = "Difference in Mean Expenditures (Ever - Never Smokers)",
+    title = "Bootstrap 95% CIs for Difference",
+    subtitle = "Using Unadjusted Model"
+  ) 
+```
+
+```{r}
+compute_difference_adjusted <- function(data, indices) {
+  d_boot <- data[indices, ]
+  
+  model_boot <- lm(
+    totalexp ~ agem65 + bs(age_sp70, degree = 2) + 
+      bs(age_sp2, degree = 4) + bs(age_sp3, degree = 4) + ever +
+      ever*(agem65 + bs(age_sp70, degree = 2) + 
+              bs(age_sp2, degree = 4) + bs(age_sp3, degree = 4)) +
+      beltuse + educate + marital + povstalb,
+    data = d_boot
+  )
+  pred_grid <- expand.grid(
+    lastage = 65:94,
+    ever = c(0, 1),
+    beltuse = factor(1, levels = levels(d$beltuse)),    
+    educate = factor(1, levels = levels(d$educate)),
+    marital = factor(1, levels = levels(d$marital)),
+    povstalb = factor(1, levels = levels(d$povstalb))
+  )
+  pred_grid$agem65 <- pred_grid$lastage - 65
+  pred_grid$age_sp70 <- pmax(0, pred_grid$lastage - 70)
+  pred_grid$age_sp2 <- pmax(0, pred_grid$lastage - 85)
+  pred_grid$age_sp3 <- pmax(0, pred_grid$lastage - 90)
+  preds <- predict(model_boot, newdata = pred_grid)
+  diff <- preds[pred_grid$ever == 1] - preds[pred_grid$ever == 0]
+  return(diff)
+}
+
+set.seed(35)
+#boot_results_adjusted <- boot(
+#  data = d, 
+#  statistic = compute_difference_adjusted, 
+#  R = 1000  
+#)
+#saveRDS(boot_results_adjusted, file = "boot_results_adjusted.rds")
+boot_results_adjusted <- readRDS(file = "boot_results_adjusted.rds")
+
+boot_ci_adjusted <- sapply(1:n_ages, function(x) {
+  boot.ci(boot_results_adjusted, index = x, type = "perc")$percent[4:5]
+})
+
+ci_bootstrap_adjusted <- data.frame(
+  age = 65:94,
+  ci_lower = boot_ci_adjusted[1, ],
+  ci_upper = boot_ci_adjusted[2, ]
+)
+
+boot_data_adjusted <- merge(adjusted_diff, ci_bootstrap_adjusted, by = "age")
+
+ggplot(boot_data_adjusted, aes(x = age, y = adjusted)) +
+  geom_line(color = "orange", linewidth = 1) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper), 
+              fill = "brown", alpha = 0.3) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(
+    x = "Age",
+    y = "Difference in Mean Expenditures (Ever - Never Smokers)",
+    title = "Bootstrap 95% CIs for Difference",
+    subtitle = "Using Adjusted Model"
+  ) 
+```
+
+```{r}
+boot_unadjusted_table <- boot_data_unadjusted[, c("age", "difference", "ci_lower", "ci_upper")]
+boot_adjusted_table <- boot_data_adjusted[, c("age", "adjusted", "ci_lower", "ci_upper")]
+
+knitr::kable(head(boot_unadjusted_table, 5),
+caption = "Adjusted Model Summary Table, Bootstrap",
+col.names = c("Age", "Difference", "Lower CI", "Upper CI"))
+
+knitr::kable(head(boot_adjusted_table, 5),
+caption = "Adjusted Model Summary Table, Bootstrap",
+col.names = c("Age", "Difference", "Lower CI", "Upper CI"))
+```
+
+# 5
+### a
+```{r}
+# unadjusted
+hat_unadj <- hatvalues(model_unadjusted)
+
+p_unadj <- length(coef(model_unadjusted))  
+n_unadj <- nobs(model_unadjusted)          
+mean_leverage_unadj <- p_unadj / n_unadj
+threshold_unadj <- 2 * mean_leverage_unadj
+
+prop_high_leverage_unadj <- mean(hat_unadj > threshold_unadj)
+
+# adjusted
+hat_adj <- hatvalues(model_adjusted)
+
+p_adj <- length(coef(model_adjusted))       
+n_adj <- nobs(model_adjusted)               
+mean_leverage_adj <- p_adj / n_adj
+threshold_adj <- 2 * mean_leverage_adj
+
+prop_high_leverage_adj <- mean(hat_adj > threshold_adj)
+```
+
+```{r}
+cat("Unadjusted Model:\n",
+    "Proportion of high-leverage points:", round(prop_high_leverage_unadj, 3))
+cat("\nAdjusted Model:\n",
+    "Proportion of high-leverage points:", round(prop_high_leverage_adj, 3))
+```
+
+### b
+```{r}
+# unadjusted
+dfbetas_unadj <- dfbetas(model_unadjusted)
+dffits_unadj <- dffits(model_unadjusted)
+
+n_unadj <- nobs(model_unadjusted)
+p_unadj <- length(coef(model_unadjusted))
+dfbetas_threshold_unadj <- 2 / sqrt(n_unadj)
+dffits_threshold_unadj <- 2 * sqrt(p_unadj / n_unadj)
+
+prop_dfbetas_unadj <- mean(apply(abs(dfbetas_unadj), 1, function(x) any(x > dfbetas_threshold_unadj)))
+prop_dffits_unadj <- mean(abs(dffits_unadj) > dffits_threshold_unadj)
+
+# adjusted
+dfbetas_adj <- dfbetas(model_adjusted)
+dffits_adj <- dffits(model_adjusted)
+
+n_adj <- nobs(model_adjusted)
+p_adj <- length(coef(model_adjusted))
+dfbetas_threshold_adj <- 2 / sqrt(n_adj)
+dffits_threshold_adj <- 2 * sqrt(p_adj / n_adj)
+
+prop_dfbetas_adj <- mean(apply(abs(dfbetas_adj), 1, function(x) any(x > dfbetas_threshold_adj)))
+prop_dffits_adj <- mean(abs(dffits_adj) > dffits_threshold_adj)
+```
+```{r}
+cat("Unadjusted Model:\n",
+    "Proportion exceeding DFBETAS threshold:", round(prop_dfbetas_unadj, 3), "\n",
+    "Proportion exceeding DFFITS threshold:", round(prop_dffits_unadj, 3))
+
+cat("\nAdjusted Model:\n",
+    "Proportion exceeding DFBETAS threshold:", round(prop_dfbetas_adj, 3), "\n",
+    "Proportion exceeding DFFITS threshold:", round(prop_dffits_adj, 3))
+```
+
+```{r}
+ols_plot_dfbetas(model_unadjusted)  
+ols_plot_dfbetas(model_adjusted)
+ols_plot_dffits(model_unadjusted)  
+ols_plot_dffits(model_adjusted)
+```
+
+```{r}
+# unadjusted
+leverage_threshold_unadj <- 2 * mean(hatvalues(model_unadjusted))
+
+removed_obs_unadj <- which(
+abs(dffits_unadj) > dffits_threshold_unadj |
+apply(abs(dfbetas_unadj), 1, max) > dfbetas_threshold_unadj |
+hatvalues(model_unadjusted) > leverage_threshold_unadj
+)
+# adjusted
+leverage_threshold_adj <- 2 * mean(hatvalues(model_adjusted))
+
+removed_obs_adj <- which(
+abs(dffits_adj) > dffits_threshold_adj |
+apply(abs(dfbetas_adj), 1, max) > dfbetas_threshold_adj |
+hatvalues(model_adjusted) > leverage_threshold_adj
+)
+
+length(removed_obs_unadj)
+length(removed_obs_adj)
+
+d_clean_unadj <- d[-removed_obs_unadj, ]
+d_clean_adj <- d[-removed_obs_adj, ] 
+```
+
+
+```{r}
+model_unadjusted_clean <- update(model_unadjusted, data = d_clean_unadj)
+model_adjusted_clean <- update(model_adjusted, data = d_clean_adj)
+```
+
+```{r, warning=FALSE}
+preds_clean <- predict(model_unadjusted_clean, newdata = pred_grid)
+
+diff_clean <- data.frame(
+  age = 65:94,
+  difference = preds_clean[pred_grid$ever == 1] - preds_clean[pred_grid$ever == 0],
+  difference_scaled = (preds_clean[pred_grid$ever == 1] - preds_clean[pred_grid$ever == 0])/1000
+)
+
+adjusted_diff_clean <- avg_comparisons(
+  model_adjusted_clean,
+  variables = "ever",
+  by = "lastage",
+  newdata = subset(d_clean_adj, lastage %in% 65:94)  
+) %>%
+  as.data.frame() %>%
+  rename(age = lastage, adjusted = estimate) %>%
+  mutate(adjusted_difference_scaled = adjusted/1000)
+
+
+unadjusted_ci_clean <- avg_comparisons(
+  model_unadjusted_clean,
+  variables = "ever",
+  by = "lastage",
+  newdata = subset(d_clean_unadj, lastage %in% 65:94)
+) %>%
+  as.data.frame() %>%
+  rename(age = lastage, difference = estimate) %>%
+  mutate(
+    ci_lower_unadj = difference - qnorm(0.975) * std.error,
+    ci_upper_unadj = difference + qnorm(0.975) * std.error
+  )
+
+adjusted_ci_clean <- avg_comparisons(
+  model_adjusted_clean,
+  variables = "ever",
+  by = "lastage",
+  newdata = subset(d_clean_adj, lastage %in% 65:94)
+) %>%
+  as.data.frame() %>%
+  rename(age = lastage, difference = estimate) %>%
+  mutate(
+    ci_lower_adj = difference - qnorm(0.975) * std.error,
+    ci_upper_adj = difference + qnorm(0.975) * std.error
+  )
+
+ci_data_clean <- unadjusted_ci_clean %>%
+  select(age, difference_unadj = difference, ci_lower_unadj, ci_upper_unadj) %>%
+  left_join(
+    adjusted_ci_clean %>% select(age, difference_adj = difference, ci_lower_adj, ci_upper_adj),
+    by = "age"
+  )
+```
+
+
+```{r}
+plot_unadj <- ggplot() +
+  geom_ribbon(data = ci_data,
+  aes(x = age, ymin = ci_lower_unadj, ymax = ci_upper_unadj),
+  fill = "lightblue") +
+  geom_line(data = ci_data,
+  aes(x = age, y = difference_unadj, color = "Full"),
+  size = 1.2, linetype = "dashed") +
+  
+  geom_ribbon(data = ci_data_clean,
+  aes(x = age, ymin = ci_lower_unadj, ymax = ci_upper_unadj),
+  fill = "darkblue", alpha = 0.6) +
+  geom_line(data = ci_data_clean,
+  aes(x = age, y = difference_unadj, color = "Clean"),
+  size = 1.2, linetype = "solid") +
+  
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_color_manual(name = "Unadjusted Model",
+  values = c("Full" = "lightblue", "Clean" = "darkblue")) +
+  labs(x = "Age", y = "Difference in Mean Expenditures ($)",
+  title = "Unadjusted Model") +
+  theme(legend.position = "bottom")
+
+plot_adj <- ggplot() +
+  geom_ribbon(data = ci_data,
+  aes(x = age, ymin = ci_lower_adj, ymax = ci_upper_adj),
+  fill = "pink") +
+  geom_line(data = ci_data,
+  aes(x = age, y = difference_adj, color = "Full"),
+  size = 1.2, linetype = "dashed") +
+  
+  geom_ribbon(data = ci_data_clean,
+  aes(x = age, ymin = ci_lower_adj, ymax = ci_upper_adj),
+  fill = "red", alpha = 0.6) +
+  geom_line(data = ci_data_clean,
+  aes(x = age, y = difference_adj, color = "Clean"),
+  size = 1.2, linetype = "solid") +
+  
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_color_manual(name = "Adjusted Model",
+  values = c("Full" = "pink", "Clean" = "red")) +
+  labs(x = "Age", y = "Difference in Mean Expenditures ($)",
+  title = "Adjusted Model") +
+  theme(legend.position = "bottom")
+
+plot_unadj
+plot_adj
+```
+
+```{r}
+ci_data_display <- ci_data %>%
+  mutate(
+    ci_95_unadjusted = paste0("(", round(ci_lower_unadj, 3), ", ", round(ci_upper_unadj, 3), ")"),
+    ci_95_adjusted = paste0("(", round(ci_lower_adj, 3), ", ", round(ci_upper_adj, 3), ")")
+  ) %>% select("age", "difference_unadj", "ci_95_unadjusted", "difference_adj", "ci_95_adjusted")
+
+ci_data_clean_display <- ci_data_clean %>%
+  mutate(
+    ci_95_unadjusted = paste0("(", round(ci_lower_unadj, 3), ", ", round(ci_upper_unadj, 3), ")"),
+    ci_95_adjusted = paste0("(", round(ci_lower_adj, 3), ", ", round(ci_upper_adj, 3), ")")
+  ) %>% select("age", "difference_unadj", "ci_95_unadjusted", "difference_adj", "ci_95_adjusted")
+
+knitr::kable(head(ci_data_display, 5),
+caption = "Comparison of Model Fits, Data Before Clean",
+align = "c",
+col.names = c("Age",
+"Unadjusted",
+"95% CI",
+"Adjusted",
+"95% CI"))
+
+knitr::kable(head(ci_data_clean_display, 5),
+caption = "Model Comparison, Data After Clean",
+align = "c",
+col.names = c("Age",
+"Unadjusted",
+"95% CI",
+"Adjusted",
+"95% CI"))
+```
+
+
+#### Method
+The data were filtered based on `eversmk` (smoking status) `lastage` (subject age), with `totalexp` (self-reported total medical expenditures for 1987) being the outcome variable. `ever` , an indicator variable, was created to denote smoking status (0 for never smoker; 1 for ever smoker).
+
+A multiple linear regression (MLR) model was fitted to estimate the difference in average medical expenditures between ever and never smokers as a function of age. The model was fitted and the residuals were computed iteratively to make sure the model residuals have mean zero as age ranges from 65 to 94. 
+The model includes B-spline terms with knots at ages 70, 75, 85, and 90, which allows the model to account for potential non-linear relationships between age and total expenditure. These knots are strategically placed to capture changes in the relationship at different life stages.
+To capture more complex patterns between the predictor variables, the interactions terms between age the smoking status were included to account for potential changes in the rate of medical expenditure for different smoking statuses across different age groups.
+To assess omitted variable bias, an adjusted model is fitted by adding the variables indicating marital status, seat belt use status, educate status, and poverty status as categorical variables to the unadjusted model.
+
+Assuming constant variance and normality of the estimated coefficients, the difference in mean expenditures between ever and never smokers and the corresponding confidence intervals were subsequently computed and visualized in ribbon plots for both the unadjusted and adjusted models across all ages. 
+To assess the validity of these assumptions, a sensitivity analysis was conducted for both models by comparing the bootstrap confidence intervals of the difference with the model-based confidence intervals of the difference. Specifically, 1000 bootstrap samples were generated, and 95% confidence intervals were calculated using the percentile method for both models. 
+The estimated mean differences between ever and never smokers with the corresponding upper and lower bounds of these confidence intervals were visualized in ribbon plots.
+
+Additionally, high-leverages and influential observations were identified using predefined standard thresholds for both adjusted and unadjusted model, and the cleaned data sets were created by excluding these observations from the original data set. 
+Then, both models were refitted with their corresponding cleaned data sets to do the estimation. Again, the difference in mean expenditures between individuals ever and never smokers and the 95% confidence intervals were estimated for both models across all age groups. Finally, the comparisons between the full and clean models, for both adjusted and unadjusted model, were visualized in plots, accompanied by summary tables for better understanding of changes in the estimates.
+
+#### Result
+In the unadjusted model, the average of difference in mean medical expenditures between ever and never smokers across individuals ages from 65 to 94 is -\$427.26, with range from \$-9998.31 (95% CI: -\$19494.75 to -\$501.87) to \$3385.97 (95% CI: -\$1573.12 to \$9413.09).
+In contrast, in the adjusted model, the average of difference in mean medical expenditures between ever and never smokers across individuals ages from 65 to 94 is -\$394.19, with range from \$-8646.35 (95% CI: -\$18099.39 to -\$806.69) to \$3919.99 (95% CI: -\$2083.93 to \$8855.88).
+By including additional variables such as marital and poverty status, the adjusted model showed a narrower range of differences. The reduced range and smaller standard errors in the adjusted model suggest that accounting for omitted variable bias by including these additional variables decreased the variability of the estimates.
+
+Notably, the differences in mean expenditures between the two models were smaller for younger individuals (those below 85) compared to older individuals. This may be due to the smaller sample sizes and increased uncertainty in the estimates for older age groups, as well as potential survivorship bias.
+
+In the sensitivity analysis, 95% bootstrap confidence intervals were compared with the model-based intervals for both models. The results showed that for younger participants (those below 85), the bootstrap and model-based intervals were relatively consistent. However, for older participants, the bootstrap confidence intervals were significantly wider. 
+For instance, at age 94, the unadjusted model's 95% confidence interval was from -\$19283.6957 to $5213.04, whereas the bootstrap interval extended from \$-42391.86 to \$30409.16. This pattern suggests that the limited data for older individuals increases the level of uncertainty in estimation. Moreover, this trend points to heteroskedasticity, meaning that the variance is not constant across different ages. Thus, the linear model assuming the constant variance and normally distributed residuals may be recalibrated to better fit the data.
+
+Lastly, high leverage and influence observations were identified using predefined thresholds. For the unadjusted model, 5.5% of the observations were classified as high leverage points, while this figure rose to 7.3% for the adjusted model. 
+Regarding high influence points, 8.7% and 3.1% of the observations exceeded the DFBETAS and DFFITS thresholds in the unadjusted model, compared to 10.7% and 3.6% in the adjusted model. Consequently, 483 and 626 observations were excluded from the unadjusted and adjusted models, respectively, representing approximately 11% and 13% of the total data, with the most of them being the observations with age greater than 85. 
+After removing these observations, the confidence intervals became narrower, and the estimates showed less variability, as shown in the summary table and the comparison plots between the full and cleaned models. The cleaned models, based on the remaining observations, better adhered to the model assumptions and yielded more stable estimates. 
+
+#### Discussion
+The inclusion of seat belt use, education, marital and poverty status variables in the adjusted model slightly reduce the  estimated difference and the variation of the estimation in mean expenditures between ever and never smokers compared to the unadjusted model. This suggests that accounting for these variables somehow addresses omitted variable bias. However, other potential confounders not present in the dataset, such as other behavioral factors or the presence of chronic conditions, could significantly influence medical expenditures. Future research should aim to incorporate these additional variables to further refine the model. Classification of the additional variables as potential confouders or the mediators of the outcome variable should be careful.
+
+The comparison between bootstrap and model-based confidence intervals revealed consistency among younger individuals (age<85), where the data are more abundant. It is as expected that the bootstrap confidence intervals are wider for older individuals, given the limited observations in this age group. The nature of healthcare data, characterized by non-normal and non-constant residuals, may further contribute to the increased uncertainty in these intervals.
+
+The sensitivity analysis which excluded high leverage and influential observations, gave particularly noteworthy results. The results showed substantial reductions in the width of the 95% confidence intervals—approximately halved for certain age groups—was more significant than expected. This finding indicates that a relatively small portion of the data disproportionately influenced the uncertainty of the estimates.
+
+These results underscore the importance of comprehensive model checking, including adjustments, bootstrapping, and sensitivity analyses, especially when dealing with data that may be highly skewed or heteroscedastic. Such methods are important to ensure the robustness of the findings in healthcare research.

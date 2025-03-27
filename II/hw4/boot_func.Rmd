@@ -1,0 +1,74 @@
+---
+title: "Problem Set 4 Longitudinal Bootstrap Code"
+output: 
+  pdf_document:
+    keep_tex: true
+header-includes:
+    - \usepackage{mathrsfs}
+    - \usepackage{amsfonts}
+---
+
+```{r load packages, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(warning = FALSE)
+library(nlme)
+library(tidyverse)
+library(gee)
+library(lmtest)
+library(splines)
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(boot)
+
+options(digits = 3)
+```
+
+# Load the data and create the parity variable
+
+```{r}
+load("NepalAnthro.rdata")
+d0 = nepal.anthro[,c("id", "age", "wt","fuvisit","sex")]
+d0$female = factor(ifelse(d0$sex==2,1,0),levels=0:1,labels=c("Male","Female"))
+install.packages("anthro")
+library(anthro)
+zscores = with(d0,anthro_zscores(sex = sex, age = age,weight = wt,is_age_in_month=TRUE))$zwei
+d = cbind(d0,zscores)[complete.cases(d0) & d0$age<60,]
+```
+
+# Longitudinal or clustered data bootstrap procedure
+
+Create a function that will take a bootstrap sample of children (with replacement) and fit the mean model of interest.
+
+The bootstrap procedure will require some transformations of the data from long to wide to long again.
+
+```{r clusteredbootstrap}
+# Create a wide version of the data
+# Each row represents an individual child
+nepal.wide <- d[,c('id','age','zscores','female','fuvisit')] %>% pivot_wider(id_cols=c(id,female),values_from = c(age,zscores),names_from='fuvisit')
+
+## Write a bootstrap function 
+my.boot <- function(data, id){
+  # Resample the children
+  dt <- data[id, ]
+  # Create a new id variable and drop the old id
+  dt$id = NULL
+  dt$id = seq(1,nrow(dt))
+  # Convert to the long format for model fitting
+  dlong0 = pivot_longer(dt,cols=!c(id,female),
+                    names_to=c("vars","fuvisit"),
+                    names_sep="_",values_to = "y")
+  dlong = pivot_wider(dlong0,names_from="vars",values_from="y")
+  # Fit the mean model
+  # NOTE:  We can use a ordinary least squares procedure here
+  # since this procedure produces unbiased estimates of the model
+  # coefficients even when the correlation or variance assumption
+  # is violated
+  fit = lm(zscores ~ age * female, dlong)
+  coefficients(fit)
+}
+
+result = boot(nepal.wide, my.boot, 1000)
+boot.V <- cov(result$t)
+boot.se <- sqrt(diag(boot.V))
+```
+
